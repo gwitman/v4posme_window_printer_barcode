@@ -19,6 +19,8 @@
     "showProductName": true,
     "showPrice": true,
     "marginMm": 2,
-    "copiesPerRow": 1
+    "copiesPerRow": 1,
+    "showBorder": true,
+    "borderThicknessMm": 0.3
   }
 }

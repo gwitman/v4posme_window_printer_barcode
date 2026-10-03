@@ -90,10 +90,12 @@ namespace v4posme_PrinterBarCode.Services
             Logger.Info("Impresion finalizada correctamente.");
         }
 
-        /// <summary>Dibuja una etiqueta individual.</summary>
+        /// <summary>Dibuja una etiqueta individual con borde, nombre, barras reales y precio.</summary>
         private void DrawLabel(Graphics g, Rectangle bounds, Product product, BarcodeConfig bc)
         {
             g.Clear(Color.White);
+            g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.None;
+            g.PixelOffsetMode = System.Drawing.Drawing2D.PixelOffsetMode.Half;
 
             int margin = MmToPixels(g, bc.MarginMm);
             var area = new Rectangle(
@@ -102,81 +104,107 @@ namespace v4posme_PrinterBarCode.Services
                 Math.Max(1, bounds.Width - margin * 2),
                 Math.Max(1, bounds.Height - margin * 2));
 
-            // Los codigos de barra son largos y llevan caracteres adicionales (prefijo/sufijo).
-            string raw = product.EffectiveBarcode ?? string.Empty;
-            string encoded = (bc.Prefix ?? string.Empty) + raw + (bc.Suffix ?? string.Empty);
+            // Perimetro (borde) de la etiqueta para delimitar cada pagina.
+            if (bc.ShowBorder)
+            {
+                using (var pen = new Pen(Color.Black, Math.Max(1f, (float)MmToPixels(g, bc.BorderThicknessMm))))
+                {
+                    pen.Alignment = System.Drawing.Drawing2D.PenAlignment.Inset;
+                    g.DrawRectangle(pen, area.X, area.Y, area.Width - 1, area.Height - 1);
+                }
+            }
 
-            var format = new StringFormat
+            // Area util interna (dejamos un pequeno respiro desde el borde).
+            int pad = Math.Max(2, MmToPixels(g, 1));
+            var inner = new Rectangle(area.X + pad, area.Y + pad,
+                Math.Max(1, area.Width - pad * 2), Math.Max(1, area.Height - pad * 2));
+
+            // El valor a codificar es el codigo de barra del producto.
+            string raw = product.EffectiveBarcode ?? string.Empty;
+
+            var centerFormat = new StringFormat
             {
                 Alignment = StringAlignment.Center,
                 LineAlignment = StringAlignment.Center,
-                Trimming = StringTrimming.None,
+                Trimming = StringTrimming.EllipsisCharacter,
                 FormatFlags = StringFormatFlags.NoWrap
             };
 
-            float y = area.Top;
+            float top = inner.Top;
+            float bottom = inner.Bottom;
 
             // Nombre del producto (arriba).
             if (bc.ShowProductName && !string.IsNullOrWhiteSpace(product.Name))
             {
                 using (var labelFont = new Font(bc.LabelFontName, bc.LabelFontSize, FontStyle.Bold))
                 {
-                    var h = labelFont.GetHeight(g);
-                    var r = new RectangleF(area.Left, y, area.Width, h);
-                    g.DrawString(product.Name, labelFont, Brushes.Black, r, format);
-                    y += h;
+                    float h = labelFont.GetHeight(g);
+                    g.DrawString(product.Name, labelFont, Brushes.Black,
+                        new RectangleF(inner.Left, top, inner.Width, h), centerFormat);
+                    top += h;
                 }
             }
 
-            // Codigo de barra (centro). Fuente de barras ajustada para que quepa.
-            using (var barcodeFont = BuildFittingBarcodeFont(g, encoded, bc, area.Width))
+            // Reservamos espacio para el texto legible del codigo y el precio (abajo).
+            float humanTextHeight = bc.LabelFontSize * 1.6f;
+            float priceHeight = bc.ShowPrice ? (bc.LabelFontSize + 1) * 1.5f : 0f;
+            float reservedBottom = humanTextHeight + priceHeight;
+
+            // Zona para las barras verticales.
+            var barcodeRect = new RectangleF(
+                inner.Left, top, inner.Width, Math.Max(10f, bottom - top - reservedBottom));
+
+            DrawCode128(g, raw, barcodeRect);
+
+            // Texto legible del codigo (debajo de las barras).
+            using (var human = new Font(bc.LabelFontName, bc.LabelFontSize))
             {
-                float barcodeHeight = area.Bottom - y;
-                if (bc.ShowPrice) barcodeHeight -= bc.LabelFontSize * 2f;
-                if (barcodeHeight < 10) barcodeHeight = 10;
-
-                var r = new RectangleF(area.Left, y, area.Width, barcodeHeight);
-                g.DrawString(encoded, barcodeFont, Brushes.Black, r, format);
-
-                // Texto legible del codigo debajo del simbolo.
-                using (var human = new Font(bc.LabelFontName, bc.LabelFontSize))
-                {
-                    var rr = new RectangleF(area.Left, y + barcodeHeight, area.Width, bc.LabelFontSize * 1.6f);
-                    g.DrawString(raw, human, Brushes.Black, rr, format);
-                }
-                y += barcodeHeight + bc.LabelFontSize * 1.6f;
+                g.DrawString(raw, human, Brushes.Black,
+                    new RectangleF(inner.Left, barcodeRect.Bottom, inner.Width, humanTextHeight), centerFormat);
             }
 
-            // Precio (abajo).
+            // Precio (abajo del todo).
             if (bc.ShowPrice)
             {
                 using (var priceFont = new Font(bc.LabelFontName, bc.LabelFontSize + 1, FontStyle.Bold))
                 {
-                    var r = new RectangleF(area.Left, y, area.Width, priceFont.GetHeight(g));
-                    g.DrawString(product.Price.ToString("C"), priceFont, Brushes.Black, r, format);
+                    g.DrawString(product.Price.ToString("C"), priceFont, Brushes.Black,
+                        new RectangleF(inner.Left, barcodeRect.Bottom + humanTextHeight, inner.Width, priceHeight),
+                        centerFormat);
                 }
             }
         }
 
         /// <summary>
-        /// Construye la fuente del codigo de barra reduciendo el tamano hasta que el
-        /// simbolo (que puede ser largo) quepa en el ancho de la etiqueta.
+        /// Dibuja un codigo de barras Code128 real (barras verticales negras) dentro
+        /// del rectangulo dado, escalando el ancho de modulo para que ocupe el area.
         /// </summary>
-        private Font BuildFittingBarcodeFont(Graphics g, string encoded, BarcodeConfig bc, float maxWidth)
+        private void DrawCode128(Graphics g, string data, RectangleF rect)
         {
-            float size = bc.FontSize;
-            Font font = new Font(bc.FontName, size);
-            var measured = g.MeasureString(encoded, font);
+            var widths = Code128Encoder.Encode(data);
 
-            while (measured.Width > maxWidth && size > 6)
+            // Total de modulos (suma de anchos) para escalar al ancho disponible.
+            int totalModules = 0;
+            foreach (var w in widths) totalModules += w;
+            if (totalModules <= 0) return;
+
+            // Quiet zone de 10 modulos a cada lado (recomendado por el estandar).
+            float moduleWidth = rect.Width / (totalModules + 20f);
+            if (moduleWidth <= 0) moduleWidth = 0.1f;
+
+            float x = rect.Left + moduleWidth * 10f; // quiet zone izquierda
+            bool bar = true; // el patron empieza con barra
+
+            foreach (var w in widths)
             {
-                font.Dispose();
-                size -= 1f;
-                font = new Font(bc.FontName, size);
-                measured = g.MeasureString(encoded, font);
+                float segmentWidth = w * moduleWidth;
+                if (bar)
+                {
+                    g.FillRectangle(Brushes.Black, x, rect.Top, segmentWidth, rect.Height);
+                }
+                x += segmentWidth;
+                bar = !bar;
             }
-
-            return font;
         }
 
         private static int MmToHundredthsInch(double mm) => (int)Math.Round(mm / 25.4 * 100.0);

@@ -56,6 +56,7 @@
     <Compile Include="Services\ConfigService.cs" />
     <Compile Include="Services\ProductService.cs" />
     <Compile Include="Services\BarcodePrinter.cs" />
+    <Compile Include="Services\Code128Encoder.cs" />
     <Compile Include="Forms\MainForm.cs">
       <SubType>Form</SubType>
     </Compile>
