@@ -178,19 +178,22 @@ namespace v4posme_PrinterBarCode.Services
             foreach (var w in widths) totalModules += w;
             if (totalModules <= 0) return;
 
-            const int quietModules = 10; // zona de silencio a cada lado
+            const int quietModules = 6; // zona de silencio a cada lado (minima recomendada)
             int totalWithQuiet = totalModules + quietModules * 2;
 
             // Ancho de modulo en pixeles ENTEROS (minimo 1) para barras nitidas.
             int moduleWidthPx = (int)Math.Floor(rect.Width / totalWithQuiet);
             if (moduleWidthPx < 1) moduleWidthPx = 1;
 
-            // Ancho real del simbolo con modulos enteros; lo centramos en el area.
-            float symbolWidth = (totalModules + quietModules * 2) * moduleWidthPx;
-            float startX = rect.Left + Math.Max(0, (rect.Width - symbolWidth) / 2f);
+            // Ancho real del simbolo (barras + quiet zones) con modulos enteros.
+            float symbolWidth = totalWithQuiet * moduleWidthPx;
 
-            // Posicion inicial (saltando la quiet zone izquierda), redondeada a entero.
-            int x = (int)Math.Round(startX) + quietModules * moduleWidthPx;
+            // Centramos el simbolo COMPLETO (incluyendo quiet zones) en el area,
+            // de modo que el bloque de barras quede centrado respecto al ancho.
+            float startX = rect.Left + (rect.Width - symbolWidth) / 2f;
+
+            // Posicion inicial de la primera barra (saltando la quiet zone izquierda).
+            int x = (int)Math.Round(startX + quietModules * moduleWidthPx);
             int top = (int)Math.Round(rect.Top);
             int height = (int)Math.Round(rect.Height);
             bool bar = true; // el patron empieza con barra
