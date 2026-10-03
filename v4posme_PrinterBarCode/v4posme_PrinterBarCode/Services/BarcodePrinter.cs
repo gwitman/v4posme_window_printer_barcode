@@ -25,15 +25,16 @@ namespace v4posme_PrinterBarCode.Services
         /// Es sincrono y debe invocarse en un hilo de fondo.
         /// </summary>
         public void Print(IEnumerable<Product> products, string printerName = null,
-            double widthMm = 0, double heightMm = 0)
+            BarcodeConfig barcode = null)
         {
             // La impresora seleccionada en la UI tiene prioridad sobre el config.
             if (string.IsNullOrWhiteSpace(printerName))
                 printerName = _config.PrinterName;
 
-            // El tamano elegido en la UI tiene prioridad sobre el config.
-            if (widthMm <= 0) widthMm = _config.Barcode.WidthMm;
-            if (heightMm <= 0) heightMm = _config.Barcode.HeightMm;
+            // La configuracion de etiqueta elegida en la UI tiene prioridad.
+            var bc = barcode ?? _config.Barcode;
+            double widthMm = bc.WidthMm;
+            double heightMm = bc.HeightMm;
 
             // Expandimos la lista segun la cantidad de copias de cada producto.
             var labels = new List<Product>();
@@ -52,7 +53,6 @@ namespace v4posme_PrinterBarCode.Services
 
             Logger.Info($"Iniciando impresion de {labels.Count} etiqueta(s) en impresora '{printerName}'.");
 
-            var bc = _config.Barcode;
             int index = 0;
 
             using (var doc = new PrintDocument())
@@ -177,34 +177,49 @@ namespace v4posme_PrinterBarCode.Services
 
         /// <summary>
         /// Dibuja un codigo de barras Code128 real (barras verticales negras) dentro
-        /// del rectangulo dado, escalando el ancho de modulo para que ocupe el area.
+        /// del rectangulo. Usa un ancho de modulo ENTERO en pixeles alineado a la
+        /// grilla para que las barras salgan nitidas y no se fundan en un bloque.
         /// </summary>
         private void DrawCode128(Graphics g, string data, RectangleF rect)
         {
             var widths = Code128Encoder.Encode(data);
 
-            // Total de modulos (suma de anchos) para escalar al ancho disponible.
             int totalModules = 0;
             foreach (var w in widths) totalModules += w;
             if (totalModules <= 0) return;
 
-            // Quiet zone de 10 modulos a cada lado (recomendado por el estandar).
-            float moduleWidth = rect.Width / (totalModules + 20f);
-            if (moduleWidth <= 0) moduleWidth = 0.1f;
+            const int quietModules = 10; // zona de silencio a cada lado
+            int totalWithQuiet = totalModules + quietModules * 2;
 
-            float x = rect.Left + moduleWidth * 10f; // quiet zone izquierda
+            // Ancho de modulo en pixeles ENTEROS (minimo 1) para barras nitidas.
+            int moduleWidthPx = (int)Math.Floor(rect.Width / totalWithQuiet);
+            if (moduleWidthPx < 1) moduleWidthPx = 1;
+
+            // Ancho real del simbolo con modulos enteros; lo centramos en el area.
+            float symbolWidth = (totalModules + quietModules * 2) * moduleWidthPx;
+            float startX = rect.Left + Math.Max(0, (rect.Width - symbolWidth) / 2f);
+
+            // Posicion inicial (saltando la quiet zone izquierda), redondeada a entero.
+            int x = (int)Math.Round(startX) + quietModules * moduleWidthPx;
+            int top = (int)Math.Round(rect.Top);
+            int height = (int)Math.Round(rect.Height);
             bool bar = true; // el patron empieza con barra
 
-            foreach (var w in widths)
+            using (var black = new SolidBrush(Color.Black))
             {
-                float segmentWidth = w * moduleWidth;
-                if (bar)
+                foreach (var w in widths)
                 {
-                    g.FillRectangle(Brushes.Black, x, rect.Top, segmentWidth, rect.Height);
+                    int segmentWidth = w * moduleWidthPx;
+                    if (bar)
+                        g.FillRectangle(black, x, top, segmentWidth, height);
+                    x += segmentWidth;
+                    bar = !bar;
                 }
-                x += segmentWidth;
-                bar = !bar;
             }
+
+            if (moduleWidthPx == 1 && rect.Width / totalWithQuiet < 1.0)
+                Logger.Warn("El codigo de barras es muy largo para el ancho de etiqueta; " +
+                    "puede perder nitidez. Considere una etiqueta mas ancha o un codigo mas corto.");
         }
 
         private static int MmToHundredthsInch(double mm) => (int)Math.Round(mm / 25.4 * 100.0);

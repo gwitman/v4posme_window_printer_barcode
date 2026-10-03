@@ -314,41 +314,41 @@ namespace v4posme_PrinterBarCode.Forms
 
             int quantity;
             string printerName;
-            double widthMm, heightMm;
+            BarcodeConfig barcode;
             // Preselecciona la ultima impresora usada, o la del config/por defecto.
             var preselect = _lastUsedPrinter ?? _preselectedPrinter;
-            using (var dlg = new QuantityDialog(selected.Count, _printers, preselect,
-                _config.Barcode.WidthMm, _config.Barcode.HeightMm))
+            using (var dlg = new QuantityDialog(selected.Count, _printers, preselect, _config.Barcode))
             {
                 if (dlg.ShowDialog(this) != DialogResult.OK)
                     return;
                 quantity = dlg.Quantity;
                 printerName = dlg.SelectedPrinter;
-                widthMm = dlg.PageWidthMm;
-                heightMm = dlg.PageHeightMm;
+                barcode = dlg.ResultBarcode;
             }
 
             _lastUsedPrinter = printerName;
+            // Recordamos la configuracion elegida para la proxima impresion de esta sesion.
+            _config.Barcode = barcode;
 
             foreach (var p in selected)
                 p.PrintQuantity = quantity;
 
-            await PrintAsync(selected, quantity, printerName, widthMm, heightMm);
+            await PrintAsync(selected, quantity, printerName, barcode);
         }
 
         // ------------------------------------------------------- Impresion
 
         private async Task PrintAsync(List<Product> products, int quantity, string printerName,
-            double widthMm, double heightMm)
+            BarcodeConfig barcode)
         {
             SetBusy(true, $"Imprimiendo en '{printerName}'... ({products.Count * quantity} etiquetas)");
             Logger.Info($"Impresion solicitada: {products.Count} productos x {quantity} = {products.Count * quantity} " +
-                $"etiquetas en '{printerName}'. Tamano pagina: {widthMm}x{heightMm} mm.");
+                $"etiquetas en '{printerName}'. Tamano pagina: {barcode.WidthMm}x{barcode.HeightMm} mm.");
 
             try
             {
                 var printer = new BarcodePrinter(_config);
-                await Task.Run(() => printer.Print(products, printerName, widthMm, heightMm));
+                await Task.Run(() => printer.Print(products, printerName, barcode));
 
                 SetStatus("Impresion completada.");
                 MessageBox.Show(this, "Impresion enviada correctamente.", "Imprimir",
