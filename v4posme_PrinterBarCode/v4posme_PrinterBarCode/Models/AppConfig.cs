@@ -86,13 +86,5 @@ namespace v4posme_PrinterBarCode.Models
 
         [JsonProperty("copiesPerRow")]
         public int CopiesPerRow { get; set; } = 1;
-
-        /// <summary>Dibuja un borde (perimetro) alrededor de cada etiqueta.</summary>
-        [JsonProperty("showBorder")]
-        public bool ShowBorder { get; set; } = true;
-
-        /// <summary>Grosor del borde de la etiqueta en milimetros.</summary>
-        [JsonProperty("borderThicknessMm")]
-        public double BorderThicknessMm { get; set; } = 0.3;
     }
 }

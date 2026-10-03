@@ -45,14 +45,12 @@ namespace v4posme_PrinterBarCode.Forms
             numWidth.Value = Clamp((decimal)bc.WidthMm, numWidth.Minimum, numWidth.Maximum);
             numHeight.Value = Clamp((decimal)bc.HeightMm, numHeight.Minimum, numHeight.Maximum);
             numMargin.Value = Clamp((decimal)bc.MarginMm, numMargin.Minimum, numMargin.Maximum);
-            numBorderThickness.Value = Clamp((decimal)bc.BorderThicknessMm, numBorderThickness.Minimum, numBorderThickness.Maximum);
             txtLabelFont.Text = bc.LabelFontName;
             numLabelFontSize.Value = Clamp((decimal)bc.LabelFontSize, numLabelFontSize.Minimum, numLabelFontSize.Maximum);
             txtPrefix.Text = bc.Prefix;
             txtSuffix.Text = bc.Suffix;
             chkShowProductName.Checked = bc.ShowProductName;
             chkShowPrice.Checked = bc.ShowPrice;
-            chkShowBorder.Checked = bc.ShowBorder;
 
             // Guardamos los campos del config que no se editan en la UI (fuente de
             // barras heredada y copias por fila) para no perderlos.
@@ -99,14 +97,12 @@ namespace v4posme_PrinterBarCode.Forms
             ResultBarcode.WidthMm = (double)numWidth.Value;
             ResultBarcode.HeightMm = (double)numHeight.Value;
             ResultBarcode.MarginMm = (double)numMargin.Value;
-            ResultBarcode.BorderThicknessMm = (double)numBorderThickness.Value;
             ResultBarcode.LabelFontName = string.IsNullOrWhiteSpace(txtLabelFont.Text) ? "Arial" : txtLabelFont.Text.Trim();
             ResultBarcode.LabelFontSize = (float)numLabelFontSize.Value;
             ResultBarcode.Prefix = txtPrefix.Text;
             ResultBarcode.Suffix = txtSuffix.Text;
             ResultBarcode.ShowProductName = chkShowProductName.Checked;
             ResultBarcode.ShowPrice = chkShowPrice.Checked;
-            ResultBarcode.ShowBorder = chkShowBorder.Checked;
 
             DialogResult = DialogResult.OK;
             Close();

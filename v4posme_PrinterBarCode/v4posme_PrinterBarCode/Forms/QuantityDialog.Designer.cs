@@ -29,8 +29,6 @@ namespace v4posme_PrinterBarCode.Forms
             this.numHeight = new System.Windows.Forms.NumericUpDown();
             this.lblMargin = new System.Windows.Forms.Label();
             this.numMargin = new System.Windows.Forms.NumericUpDown();
-            this.lblBorderThickness = new System.Windows.Forms.Label();
-            this.numBorderThickness = new System.Windows.Forms.NumericUpDown();
             this.lblLabelFont = new System.Windows.Forms.Label();
             this.txtLabelFont = new System.Windows.Forms.TextBox();
             this.lblLabelFontSize = new System.Windows.Forms.Label();
@@ -41,7 +39,6 @@ namespace v4posme_PrinterBarCode.Forms
             this.txtSuffix = new System.Windows.Forms.TextBox();
             this.chkShowProductName = new System.Windows.Forms.CheckBox();
             this.chkShowPrice = new System.Windows.Forms.CheckBox();
-            this.chkShowBorder = new System.Windows.Forms.CheckBox();
             this.lblSummary = new System.Windows.Forms.Label();
             this.btnAccept = new System.Windows.Forms.Button();
             this.btnCancel = new System.Windows.Forms.Button();
@@ -49,7 +46,6 @@ namespace v4posme_PrinterBarCode.Forms
             ((System.ComponentModel.ISupportInitialize)(this.numWidth)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.numHeight)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.numMargin)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.numBorderThickness)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.numLabelFontSize)).BeginInit();
             this.grpBarcode.SuspendLayout();
             this.SuspendLayout();
@@ -124,8 +120,6 @@ namespace v4posme_PrinterBarCode.Forms
             this.grpBarcode.Controls.Add(this.numHeight);
             this.grpBarcode.Controls.Add(this.lblMargin);
             this.grpBarcode.Controls.Add(this.numMargin);
-            this.grpBarcode.Controls.Add(this.lblBorderThickness);
-            this.grpBarcode.Controls.Add(this.numBorderThickness);
             this.grpBarcode.Controls.Add(this.lblLabelFont);
             this.grpBarcode.Controls.Add(this.txtLabelFont);
             this.grpBarcode.Controls.Add(this.lblLabelFontSize);
@@ -136,7 +130,6 @@ namespace v4posme_PrinterBarCode.Forms
             this.grpBarcode.Controls.Add(this.txtSuffix);
             this.grpBarcode.Controls.Add(this.chkShowProductName);
             this.grpBarcode.Controls.Add(this.chkShowPrice);
-            this.grpBarcode.Controls.Add(this.chkShowBorder);
             this.grpBarcode.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
             this.grpBarcode.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(0)))), ((int)(((byte)(120)))), ((int)(((byte)(215)))));
             this.grpBarcode.Location = new System.Drawing.Point(22, 130);
@@ -202,25 +195,6 @@ namespace v4posme_PrinterBarCode.Forms
             this.numMargin.Name = "numMargin";
             this.numMargin.Size = new System.Drawing.Size(80, 23);
             this.numMargin.Value = new decimal(new int[] { 2, 0, 0, 0 });
-            // 
-            // lblBorderThickness
-            // 
-            this.lblBorderThickness.AutoSize = true;
-            this.lblBorderThickness.Font = new System.Drawing.Font("Segoe UI", 8.5F);
-            this.lblBorderThickness.ForeColor = System.Drawing.Color.Black;
-            this.lblBorderThickness.Location = new System.Drawing.Point(220, 60);
-            this.lblBorderThickness.Name = "lblBorderThickness";
-            this.lblBorderThickness.Text = "Grosor borde (mm):";
-            // 
-            // numBorderThickness
-            // 
-            this.numBorderThickness.DecimalPlaces = 1;
-            this.numBorderThickness.Increment = new decimal(new int[] { 1, 0, 0, 65536 });
-            this.numBorderThickness.Location = new System.Drawing.Point(320, 56);
-            this.numBorderThickness.Maximum = new decimal(new int[] { 10, 0, 0, 0 });
-            this.numBorderThickness.Name = "numBorderThickness";
-            this.numBorderThickness.Size = new System.Drawing.Size(80, 23);
-            this.numBorderThickness.Value = new decimal(new int[] { 3, 0, 0, 65536 });
             // 
             // lblLabelFont
             // 
@@ -307,16 +281,6 @@ namespace v4posme_PrinterBarCode.Forms
             this.chkShowPrice.Text = "Mostrar precio";
             this.chkShowPrice.Checked = true;
             // 
-            // chkShowBorder
-            // 
-            this.chkShowBorder.AutoSize = true;
-            this.chkShowBorder.Font = new System.Drawing.Font("Segoe UI", 8.5F);
-            this.chkShowBorder.ForeColor = System.Drawing.Color.Black;
-            this.chkShowBorder.Location = new System.Drawing.Point(300, 158);
-            this.chkShowBorder.Name = "chkShowBorder";
-            this.chkShowBorder.Text = "Mostrar borde";
-            this.chkShowBorder.Checked = true;
-            // 
             // lblSummary
             // 
             this.lblSummary.AutoSize = true;
@@ -384,7 +348,6 @@ namespace v4posme_PrinterBarCode.Forms
             ((System.ComponentModel.ISupportInitialize)(this.numWidth)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.numHeight)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.numMargin)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.numBorderThickness)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.numLabelFontSize)).EndInit();
             this.grpBarcode.ResumeLayout(false);
             this.grpBarcode.PerformLayout();
@@ -406,8 +369,6 @@ namespace v4posme_PrinterBarCode.Forms
         private System.Windows.Forms.NumericUpDown numHeight;
         private System.Windows.Forms.Label lblMargin;
         private System.Windows.Forms.NumericUpDown numMargin;
-        private System.Windows.Forms.Label lblBorderThickness;
-        private System.Windows.Forms.NumericUpDown numBorderThickness;
         private System.Windows.Forms.Label lblLabelFont;
         private System.Windows.Forms.TextBox txtLabelFont;
         private System.Windows.Forms.Label lblLabelFontSize;
@@ -418,7 +379,6 @@ namespace v4posme_PrinterBarCode.Forms
         private System.Windows.Forms.TextBox txtSuffix;
         private System.Windows.Forms.CheckBox chkShowProductName;
         private System.Windows.Forms.CheckBox chkShowPrice;
-        private System.Windows.Forms.CheckBox chkShowBorder;
         private System.Windows.Forms.Label lblSummary;
         private System.Windows.Forms.Button btnAccept;
         private System.Windows.Forms.Button btnCancel;

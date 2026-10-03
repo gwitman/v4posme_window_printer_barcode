@@ -104,17 +104,7 @@ namespace v4posme_PrinterBarCode.Services
                 Math.Max(1, bounds.Width - margin * 2),
                 Math.Max(1, bounds.Height - margin * 2));
 
-            // Perimetro (borde) de la etiqueta para delimitar cada pagina.
-            if (bc.ShowBorder)
-            {
-                using (var pen = new Pen(Color.Black, Math.Max(1f, (float)MmToPixels(g, bc.BorderThicknessMm))))
-                {
-                    pen.Alignment = System.Drawing.Drawing2D.PenAlignment.Inset;
-                    g.DrawRectangle(pen, area.X, area.Y, area.Width - 1, area.Height - 1);
-                }
-            }
-
-            // Area util interna (dejamos un pequeno respiro desde el borde).
+            // Area util interna.
             int pad = Math.Max(2, MmToPixels(g, 1));
             var inner = new Rectangle(area.X + pad, area.Y + pad,
                 Math.Max(1, area.Width - pad * 2), Math.Max(1, area.Height - pad * 2));
