@@ -48,11 +48,12 @@ namespace v4posme_PrinterBarCode.Models
     /// </summary>
     public class BarcodeConfig
     {
+        // Etiqueta por defecto: 2 x 1 pulgada (50.8 x 25.4 mm).
         [JsonProperty("widthMm")]
-        public double WidthMm { get; set; } = 50;
+        public double WidthMm { get; set; } = 50.8;
 
         [JsonProperty("heightMm")]
-        public double HeightMm { get; set; } = 30;
+        public double HeightMm { get; set; } = 25.4;
 
         [JsonProperty("fontName")]
         public string FontName { get; set; } = "IDAutomationHC39M";
@@ -64,7 +65,7 @@ namespace v4posme_PrinterBarCode.Models
         public string LabelFontName { get; set; } = "Arial";
 
         [JsonProperty("labelFontSize")]
-        public float LabelFontSize { get; set; } = 8;
+        public float LabelFontSize { get; set; } = 7;
 
         /// <summary>Caracter(es) adicionales al inicio del codigo (ej. "*" para Code39).</summary>
         [JsonProperty("prefix")]
@@ -81,7 +82,7 @@ namespace v4posme_PrinterBarCode.Models
         public bool ShowPrice { get; set; } = true;
 
         [JsonProperty("marginMm")]
-        public double MarginMm { get; set; } = 2;
+        public double MarginMm { get; set; } = 1.5;
 
         [JsonProperty("copiesPerRow")]
         public int CopiesPerRow { get; set; } = 1;
