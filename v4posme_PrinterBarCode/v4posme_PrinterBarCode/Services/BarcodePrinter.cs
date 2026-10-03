@@ -79,7 +79,7 @@ namespace v4posme_PrinterBarCode.Services
                 doc.PrintPage += (sender, e) =>
                 {
                     var product = labels[index];
-                    DrawLabel(e.Graphics, e.MarginBounds.IsEmpty ? e.PageBounds : e.PageBounds, product, bc);
+                    DrawLabel(e.Graphics, e.PageBounds, product, bc);
                     index++;
                     e.HasMorePages = index < labels.Count;
                 };
@@ -104,7 +104,7 @@ namespace v4posme_PrinterBarCode.Services
                 Math.Max(1, bounds.Width - margin * 2),
                 Math.Max(1, bounds.Height - margin * 2));
 
-            // Area util interna.
+            // Area util interna (pequeno respiro).
             int pad = Math.Max(2, MmToPixels(g, 1));
             var inner = new Rectangle(area.X + pad, area.Y + pad,
                 Math.Max(1, area.Width - pad * 2), Math.Max(1, area.Height - pad * 2));
