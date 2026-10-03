@@ -33,6 +33,15 @@ namespace v4posme_PrinterBarCode.Forms
         private const string SelCol = "colSelect";
         private bool _updatingGrid;
 
+        /// <summary>Impresoras instaladas, usadas por el dialogo de impresion.</summary>
+        private readonly List<string> _printers = new List<string>();
+
+        /// <summary>Impresora preseleccionada (config o la por defecto del sistema).</summary>
+        private string _preselectedPrinter;
+
+        /// <summary>Ultima impresora elegida por el usuario (se recuerda entre impresiones).</summary>
+        private string _lastUsedPrinter;
+
         public MainForm(AppConfig config)
         {
             InitializeComponent();
@@ -40,12 +49,45 @@ namespace v4posme_PrinterBarCode.Forms
             _productService = new ProductService(config);
             BuildColumns();
             WireGridEvents();
+            LoadPrinters();
         }
 
         protected override async void OnShown(EventArgs e)
         {
             base.OnShown(e);
             await LoadProductsAsync();
+        }
+
+        // ------------------------------------------------------- Impresoras
+
+        /// <summary>
+        /// Enumera las impresoras instaladas y define la preseleccion (la del
+        /// config.json o, si no esta definida, la por defecto del sistema).
+        /// La seleccion real se hace en el dialogo de impresion.
+        /// </summary>
+        private void LoadPrinters()
+        {
+            _printers.Clear();
+            string defaultPrinter = null;
+
+            try
+            {
+                foreach (string printer in System.Drawing.Printing.PrinterSettings.InstalledPrinters)
+                    _printers.Add(printer);
+
+                using (var doc = new System.Drawing.Printing.PrintDocument())
+                    defaultPrinter = doc.PrinterSettings.PrinterName;
+            }
+            catch (Exception ex)
+            {
+                Logger.Error("No se pudieron enumerar las impresoras instaladas.", ex);
+            }
+
+            _preselectedPrinter = !string.IsNullOrWhiteSpace(_config.PrinterName)
+                ? _config.PrinterName
+                : defaultPrinter;
+
+            Logger.Info($"Impresoras cargadas: {_printers.Count}. Preseleccionada: '{_preselectedPrinter}'.");
         }
 
         // ---------------------------------------------------------------- Grid
@@ -263,31 +305,50 @@ namespace v4posme_PrinterBarCode.Forms
                 return;
             }
 
+            if (_printers.Count == 0)
+            {
+                MessageBox.Show(this, "No hay impresoras instaladas en el sistema.", "Imprimir",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
             int quantity;
-            using (var dlg = new QuantityDialog(selected.Count))
+            string printerName;
+            double widthMm, heightMm;
+            // Preselecciona la ultima impresora usada, o la del config/por defecto.
+            var preselect = _lastUsedPrinter ?? _preselectedPrinter;
+            using (var dlg = new QuantityDialog(selected.Count, _printers, preselect,
+                _config.Barcode.WidthMm, _config.Barcode.HeightMm))
             {
                 if (dlg.ShowDialog(this) != DialogResult.OK)
                     return;
                 quantity = dlg.Quantity;
+                printerName = dlg.SelectedPrinter;
+                widthMm = dlg.PageWidthMm;
+                heightMm = dlg.PageHeightMm;
             }
+
+            _lastUsedPrinter = printerName;
 
             foreach (var p in selected)
                 p.PrintQuantity = quantity;
 
-            await PrintAsync(selected, quantity);
+            await PrintAsync(selected, quantity, printerName, widthMm, heightMm);
         }
 
         // ------------------------------------------------------- Impresion
 
-        private async Task PrintAsync(List<Product> products, int quantity)
+        private async Task PrintAsync(List<Product> products, int quantity, string printerName,
+            double widthMm, double heightMm)
         {
-            SetBusy(true, $"Imprimiendo... ({products.Count * quantity} etiquetas)");
-            Logger.Info($"Impresion solicitada: {products.Count} productos x {quantity} = {products.Count * quantity} etiquetas.");
+            SetBusy(true, $"Imprimiendo en '{printerName}'... ({products.Count * quantity} etiquetas)");
+            Logger.Info($"Impresion solicitada: {products.Count} productos x {quantity} = {products.Count * quantity} " +
+                $"etiquetas en '{printerName}'. Tamano pagina: {widthMm}x{heightMm} mm.");
 
             try
             {
                 var printer = new BarcodePrinter(_config);
-                await Task.Run(() => printer.Print(products));
+                await Task.Run(() => printer.Print(products, printerName, widthMm, heightMm));
 
                 SetStatus("Impresion completada.");
                 MessageBox.Show(this, "Impresion enviada correctamente.", "Imprimir",

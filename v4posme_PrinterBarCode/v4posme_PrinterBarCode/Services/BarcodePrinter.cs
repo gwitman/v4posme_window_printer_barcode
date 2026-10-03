@@ -24,8 +24,17 @@ namespace v4posme_PrinterBarCode.Services
         /// Imprime las etiquetas de la lista de productos (una pagina por etiqueta).
         /// Es sincrono y debe invocarse en un hilo de fondo.
         /// </summary>
-        public void Print(IEnumerable<Product> products)
+        public void Print(IEnumerable<Product> products, string printerName = null,
+            double widthMm = 0, double heightMm = 0)
         {
+            // La impresora seleccionada en la UI tiene prioridad sobre el config.
+            if (string.IsNullOrWhiteSpace(printerName))
+                printerName = _config.PrinterName;
+
+            // El tamano elegido en la UI tiene prioridad sobre el config.
+            if (widthMm <= 0) widthMm = _config.Barcode.WidthMm;
+            if (heightMm <= 0) heightMm = _config.Barcode.HeightMm;
+
             // Expandimos la lista segun la cantidad de copias de cada producto.
             var labels = new List<Product>();
             foreach (var p in products)
@@ -41,7 +50,7 @@ namespace v4posme_PrinterBarCode.Services
                 return;
             }
 
-            Logger.Info($"Iniciando impresion de {labels.Count} etiqueta(s) en impresora '{_config.PrinterName}'.");
+            Logger.Info($"Iniciando impresion de {labels.Count} etiqueta(s) en impresora '{printerName}'.");
 
             var bc = _config.Barcode;
             int index = 0;
@@ -50,19 +59,22 @@ namespace v4posme_PrinterBarCode.Services
             {
                 doc.DocumentName = "v4posme Codigos de Barra";
 
-                if (!string.IsNullOrWhiteSpace(_config.PrinterName))
+                if (!string.IsNullOrWhiteSpace(printerName))
                 {
-                    doc.PrinterSettings.PrinterName = _config.PrinterName;
+                    doc.PrinterSettings.PrinterName = printerName;
                     if (!doc.PrinterSettings.IsValid)
                         throw new InvalidOperationException(
-                            $"La impresora '{_config.PrinterName}' no es valida o no esta instalada.");
+                            $"La impresora '{printerName}' no es valida o no esta instalada.");
                 }
 
                 // Tamano de etiqueta en centesimas de pulgada (unidad de PaperSize).
-                int widthHund = MmToHundredthsInch(bc.WidthMm);
-                int heightHund = MmToHundredthsInch(bc.HeightMm);
-                doc.DefaultPageSettings.PaperSize = new PaperSize("Etiqueta", widthHund, heightHund);
+                int widthHund   = MmToHundredthsInch(widthMm);
+                int heightHund  = MmToHundredthsInch(heightMm);
+                doc.DefaultPageSettings.PaperSize = new PaperSize(
+                    $"Etiqueta {widthMm:0.#}x{heightMm:0.#}mm", widthHund, heightHund);
                 doc.DefaultPageSettings.Margins = new Margins(0, 0, 0, 0);
+                Logger.Info($"Tamano de pagina aplicado: {widthMm:0.#}x{heightMm:0.#} mm " +
+                    $"({widthHund}x{heightHund} centesimas de pulgada).");
 
                 doc.PrintPage += (sender, e) =>
                 {
