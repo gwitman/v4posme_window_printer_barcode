@@ -1,0 +1,24 @@
+{
+  "productsUrl": "https://posme.net/v4posme/mi_mercadito_campestre/public/app_mobile_api/getDataDownload",
+  "httpMethod": "POST",
+  "txtNickname": "superadmin",
+  "txtPassword": "jose.",
+  "userAgent": "Mozilla/5.0 (Windows NT; Windows NT 10.0; es-NI) WindowsPowerShell/5.1",
+  "printerName": "HOION THERMAL LABEL",
+  "logFilePath": "logs/app_log.txt",
+  "requestTimeoutSeconds": 60,
+  "barcode": {
+    "widthMm": 50.8,
+    "heightMm": 25.4,
+    "fontName": "IDAutomationHC39M",
+    "fontSize": 24,
+    "labelFontName": "Arial",
+    "labelFontSize": 7,
+    "prefix": "*",
+    "suffix": "*",
+    "showProductName": true,
+    "showPrice": true,
+    "marginMm": 1.5,
+    "copiesPerRow": 1
+  }
+}

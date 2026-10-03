@@ -1,0 +1,64 @@
+===========================================================
+ v4posme - Impresion de Codigos de Barra
+ Guia de instalacion en otra PC
+===========================================================
+
+CONTENIDO DEL PAQUETE
+---------------------
+- v4posme_PrinterBarCode.exe         Aplicacion principal
+- v4posme_PrinterBarCode.exe.config  Configuracion del runtime .NET
+- Newtonsoft.Json.dll                Dependencia (lectura de JSON)
+- config.json                        Configuracion de la aplicacion
+- Ejecutar.bat                       Lanzador rapido
+
+
+REQUISITOS DE LA PC DESTINO
+---------------------------
+1. Windows 7 SP1 o superior (Windows 10/11 recomendado).
+2. .NET Framework 4.7.2 o superior instalado.
+   - Windows 10/11 ya lo incluye.
+   - Si no lo tiene, descargue "Microsoft .NET Framework 4.8"
+     desde el sitio oficial de Microsoft e instalelo.
+3. La impresora de etiquetas instalada en Windows
+   (con sus drivers) antes de imprimir.
+
+
+INSTALACION
+-----------
+1. Copie TODA esta carpeta a la PC destino
+   (por ejemplo a C:\v4posme_PrinterBarCode).
+2. No separe los archivos: deben permanecer juntos en la
+   misma carpeta.
+3. Edite config.json segun su entorno (ver abajo).
+4. Ejecute v4posme_PrinterBarCode.exe (o Ejecutar.bat).
+
+
+CONFIGURACION (config.json)
+---------------------------
+- productsUrl   : URL del servicio de descarga de productos.
+- httpMethod    : "POST".
+- txtNickname   : usuario del servicio.
+- txtPassword   : clave del servicio.
+- userAgent     : no modificar salvo indicacion.
+- printerName   : nombre EXACTO de la impresora en Windows
+                  (ej. "HOION THERMAL LABEL"). Debe coincidir
+                  con el nombre que aparece en
+                  Configuracion > Dispositivos > Impresoras.
+- barcode       : tamano y formato de la etiqueta
+                  (ancho/alto en mm, fuente, margenes, etc.).
+                  Tambien se puede ajustar en la ventana de
+                  impresion de la aplicacion.
+
+
+REGISTRO (LOG)
+--------------
+La aplicacion crea una carpeta "logs" junto al ejecutable
+con el archivo app_log.txt, que registra la actividad y los
+errores. Utilicelo para diagnosticar cualquier problema.
+
+
+SOPORTE
+-------
+Si la aplicacion no abre, verifique que .NET Framework 4.7.2+
+este instalado y que todos los archivos esten en la misma
+carpeta.
