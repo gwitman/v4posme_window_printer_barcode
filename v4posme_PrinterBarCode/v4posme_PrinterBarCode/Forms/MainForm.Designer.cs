@@ -28,6 +28,7 @@ namespace v4posme_PrinterBarCode.Forms
             this.grid = new System.Windows.Forms.DataGridView();
             this.panelStatus = new System.Windows.Forms.Panel();
             this.lblStatus = new System.Windows.Forms.Label();
+            this.lblVersion = new System.Windows.Forms.Label();
             this.panelHeader.SuspendLayout();
             this.panelToolbar.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.grid)).BeginInit();
@@ -178,6 +179,7 @@ namespace v4posme_PrinterBarCode.Forms
             // panelStatus
             // 
             this.panelStatus.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(238)))), ((int)(((byte)(239)))), ((int)(((byte)(241)))));
+            this.panelStatus.Controls.Add(this.lblVersion);
             this.panelStatus.Controls.Add(this.lblStatus);
             this.panelStatus.Dock = System.Windows.Forms.DockStyle.Bottom;
             this.panelStatus.Location = new System.Drawing.Point(0, 614);
@@ -195,6 +197,18 @@ namespace v4posme_PrinterBarCode.Forms
             this.lblStatus.Size = new System.Drawing.Size(50, 15);
             this.lblStatus.TabIndex = 0;
             this.lblStatus.Text = "Listo.";
+            // 
+            // lblVersion
+            // 
+            this.lblVersion.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.lblVersion.Font = new System.Drawing.Font("Segoe UI", 9F);
+            this.lblVersion.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(70)))), ((int)(((byte)(70)))), ((int)(((byte)(70)))));
+            this.lblVersion.Location = new System.Drawing.Point(820, 6);
+            this.lblVersion.Name = "lblVersion";
+            this.lblVersion.Size = new System.Drawing.Size(170, 15);
+            this.lblVersion.TabIndex = 1;
+            this.lblVersion.Text = "v1.0.0.0";
+            this.lblVersion.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
             // 
             // MainForm
             // 
@@ -233,5 +247,6 @@ namespace v4posme_PrinterBarCode.Forms
         private System.Windows.Forms.DataGridView grid;
         private System.Windows.Forms.Panel panelStatus;
         private System.Windows.Forms.Label lblStatus;
+        private System.Windows.Forms.Label lblVersion;
     }
 }

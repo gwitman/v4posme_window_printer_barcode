@@ -7,6 +7,17 @@ namespace v4posme_PrinterBarCode.Models
     /// </summary>
     public class AppConfig
     {
+        /// <summary>Version de la aplicacion, leida directamente del config.json.</summary>
+        [JsonProperty("version")]
+        public string Version { get; set; }
+
+        /// <summary>
+        /// Si tiene un valor distinto de vacio, SIEMPRE se imprime en esta impresora,
+        /// sin importar cual seleccione el usuario en el dialogo.
+        /// </summary>
+        [JsonProperty("printerNamePriority")]
+        public string PrinterNamePriority { get; set; }
+
         [JsonProperty("productsUrl")]
         public string ProductsUrl { get; set; }
 

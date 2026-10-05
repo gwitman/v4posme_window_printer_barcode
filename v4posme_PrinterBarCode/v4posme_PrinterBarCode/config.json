@@ -1,5 +1,7 @@
 {
-  "productsUrl": "https://posme.net/v4posme/mi_mercadito_campestre/public/app_mobile_api/getDataDownload",
+  "version": "1.0.0.0",
+  "printerNamePriority": "HiLABELHi-Printer",
+  "productsUrl": "https://posme.net/v4posme/blandon_moto_repuesto/public/app_mobile_api/getDataDownload",
   "httpMethod": "POST",
   "txtNickname": "superadmin",
   "txtPassword": "jose.",

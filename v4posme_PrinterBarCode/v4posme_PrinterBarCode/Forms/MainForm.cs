@@ -50,6 +50,13 @@ namespace v4posme_PrinterBarCode.Forms
             BuildColumns();
             WireGridEvents();
             LoadPrinters();
+
+            // Mostramos la version leida del config.json. Si no esta definida,
+            // caemos a la version del ensamblado.
+            var version = !string.IsNullOrWhiteSpace(_config.Version)
+                ? _config.Version
+                : System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString();
+            lblVersion.Text = $"v{version}";
         }
 
         protected override async void OnShown(EventArgs e)
@@ -73,7 +80,30 @@ namespace v4posme_PrinterBarCode.Forms
             try
             {
                 foreach (string printer in System.Drawing.Printing.PrinterSettings.InstalledPrinters)
-                    _printers.Add(printer);
+                {
+                    if (string.IsNullOrWhiteSpace(printer))
+                        continue;
+
+                    // PrinterSettings.InstalledPrinters puede devolver entradas obsoletas
+                    // que quedaron en el registro de Windows. Validamos cada impresora para
+                    // mostrar solo las que realmente estan disponibles.
+                    try
+                    {
+                        var settings = new System.Drawing.Printing.PrinterSettings
+                        {
+                            PrinterName = printer
+                        };
+
+                        if (settings.IsValid)
+                            _printers.Add(printer);
+                        else
+                            Logger.Info($"Impresora ignorada por no ser valida: '{printer}'.");
+                    }
+                    catch (Exception exPrinter)
+                    {
+                        Logger.Error($"No se pudo validar la impresora '{printer}'.", exPrinter);
+                    }
+                }
 
                 using (var doc = new System.Drawing.Printing.PrintDocument())
                     defaultPrinter = doc.PrinterSettings.PrinterName;
@@ -304,6 +334,11 @@ namespace v4posme_PrinterBarCode.Forms
                     MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
             }
+
+            // Releemos las impresoras instaladas justo antes de mostrar el dialogo,
+            // asi reflejamos las que se agregaron o quitaron en Windows mientras la app
+            // estaba abierta (la lista no se actualiza sola).
+            LoadPrinters();
 
             if (_printers.Count == 0)
             {

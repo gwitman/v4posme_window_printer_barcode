@@ -27,8 +27,16 @@ namespace v4posme_PrinterBarCode.Services
         public void Print(IEnumerable<Product> products, string printerName = null,
             BarcodeConfig barcode = null)
         {
+            // Si el config define una impresora prioritaria, SIEMPRE se usa esa,
+            // sin importar la que el usuario haya seleccionado en el dialogo.
+            if (!string.IsNullOrWhiteSpace(_config.PrinterNamePriority))
+            {
+                Logger.Info($"Impresora prioritaria definida en config: '{_config.PrinterNamePriority}'. " +
+                    "Se ignora la seleccion del usuario.");
+                printerName = _config.PrinterNamePriority;
+            }
             // La impresora seleccionada en la UI tiene prioridad sobre el config.
-            if (string.IsNullOrWhiteSpace(printerName))
+            else if (string.IsNullOrWhiteSpace(printerName))
                 printerName = _config.PrinterName;
 
             // La configuracion de etiqueta elegida en la UI tiene prioridad.
