@@ -46,6 +46,11 @@ namespace v4posme_PrinterBarCode.Services
             Logger.Info($"Generando trabajo TSPL para {labels.Count} etiqueta(s) en '{printerName}'.");
 
             var commands = BuildTspl(labels, bc);
+
+            // Registramos el bloque TSPL completo: es la unica forma de diagnosticar
+            // en campo por que una etiqueta sale vacia o sin codigo de barra.
+            Logger.Info("Comandos TSPL generados:\r\n" + commands);
+
             RawPrinterHelper.SendStringToPrinter(printerName, commands);
 
             Logger.Info("Trabajo TSPL enviado correctamente a la impresora.");
@@ -72,6 +77,14 @@ namespace v4posme_PrinterBarCode.Services
             foreach (var product in labels)
             {
                 string raw = Sanitize(product.EffectiveBarcode);
+
+                // Sin contenido no hay codigo de barra posible: el comando BARCODE
+                // de TSPL exige un valor. Avisamos y saltamos esta etiqueta.
+                if (string.IsNullOrEmpty(raw))
+                {
+                    Logger.Warn($"Producto '{product.Name}' sin codigo de barra; se omite su etiqueta TSPL.");
+                    continue;
+                }
 
                 // --- Configuracion de la etiqueta ---
                 sb.Append("SIZE ")

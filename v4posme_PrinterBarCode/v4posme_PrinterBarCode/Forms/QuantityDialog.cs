@@ -52,13 +52,20 @@ namespace v4posme_PrinterBarCode.Forms
             chkShowProductName.Checked = bc.ShowProductName;
             chkShowPrice.Checked = bc.ShowPrice;
 
-            // Guardamos los campos del config que no se editan en la UI (fuente de
-            // barras heredada y copias por fila) para no perderlos.
+            // Guardamos los campos del config que no se editan en la UI para no
+            // perderlos. Incluye la fuente de barras heredada, copias por fila y
+            // TODOS los parametros TSPL (dpi, gap, densidad, velocidad); si se
+            // perdieran, la impresion en impresoras HION/TSC saldria mal o vacia.
             ResultBarcode = new BarcodeConfig
             {
                 FontName = bc.FontName,
                 FontSize = bc.FontSize,
-                CopiesPerRow = bc.CopiesPerRow
+                CopiesPerRow = bc.CopiesPerRow,
+                PrinterDpi = bc.PrinterDpi,
+                GapMm = bc.GapMm,
+                GapOffsetMm = bc.GapOffsetMm,
+                Density = bc.Density,
+                Speed = bc.Speed
             };
 
             UpdateSummary();

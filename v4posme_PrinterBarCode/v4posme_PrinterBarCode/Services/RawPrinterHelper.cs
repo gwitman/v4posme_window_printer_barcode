@@ -73,8 +73,17 @@ namespace v4posme_PrinterBarCode.Services
             };
 
             if (!OpenPrinter(printerName, out hPrinter, IntPtr.Zero))
-                throw new InvalidOperationException(
-                    $"No se pudo abrir la impresora '{printerName}' (codigo {Marshal.GetLastWin32Error()}).");
+            {
+                int code = Marshal.GetLastWin32Error();
+                // 1801 = ERROR_INVALID_PRINTER_NAME: el nombre no corresponde a
+                // ninguna impresora instalada. Es el fallo mas comun en campo.
+                string detalle = code == 1801
+                    ? $"El nombre '{printerName}' no corresponde a ninguna impresora instalada. " +
+                      "Revise 'printerName'/'printerNamePriority' en config.json y use el nombre exacto " +
+                      "que aparece en Windows (Configuracion > Impresoras)."
+                    : $"No se pudo abrir la impresora '{printerName}' (codigo {code}).";
+                throw new InvalidOperationException(detalle);
+            }
 
             IntPtr pUnmanagedBytes = IntPtr.Zero;
             try
