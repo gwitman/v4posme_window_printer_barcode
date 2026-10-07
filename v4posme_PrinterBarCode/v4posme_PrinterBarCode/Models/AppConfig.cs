@@ -44,6 +44,17 @@ namespace v4posme_PrinterBarCode.Models
         [JsonProperty("printerName")]
         public string PrinterName { get; set; }
 
+        /// <summary>
+        /// Tipo/lenguaje de la impresora. Determina COMO se envia el trabajo:
+        ///   "HION" / "TSPL" / "TSC"  -> se envian comandos TSPL nativos en RAW
+        ///                                (la impresora genera el codigo de barra por hardware).
+        ///   cualquier otro valor o vacio -> se dibuja con GDI (System.Drawing.Printing).
+        /// Las impresoras termicas de etiqueta HION requieren TSPL para que el codigo
+        /// de barra salga nitido y escaneable; por eso es el modo recomendado.
+        /// </summary>
+        [JsonProperty("typePrinter")]
+        public string TypePrinter { get; set; } = "";
+
         [JsonProperty("logFilePath")]
         public string LogFilePath { get; set; } = "logs/app_log.txt";
 
@@ -97,5 +108,37 @@ namespace v4posme_PrinterBarCode.Models
 
         [JsonProperty("copiesPerRow")]
         public int CopiesPerRow { get; set; } = 1;
+
+        // ------------------------------------------------------------------
+        // Parametros especificos de la impresion TSPL (impresoras HION/TSC).
+        // Solo se usan cuando typePrinter es HION/TSPL/TSC.
+        // ------------------------------------------------------------------
+
+        /// <summary>
+        /// Resolucion de la impresora en puntos por pulgada. La mayoria de las
+        /// termicas de etiqueta son de 203 dpi (8 dots/mm); algunas son de 300 dpi
+        /// (~11.8 dots/mm). TSPL trabaja en dots, por eso debe coincidir con tu modelo.
+        /// </summary>
+        [JsonProperty("printerDpi")]
+        public int PrinterDpi { get; set; } = 203;
+
+        /// <summary>Separacion vertical (GAP) entre etiquetas, en mm.</summary>
+        [JsonProperty("gapMm")]
+        public double GapMm { get; set; } = 2.0;
+
+        /// <summary>Desplazamiento del GAP, en mm (normalmente 0).</summary>
+        [JsonProperty("gapOffsetMm")]
+        public double GapOffsetMm { get; set; } = 0.0;
+
+        /// <summary>Oscuridad/densidad del cabezal termico TSPL (0-15).</summary>
+        [JsonProperty("density")]
+        public int Density { get; set; } = 10;
+
+        /// <summary>
+        /// Velocidad de impresion TSPL en pulgadas por segundo. 0 = no enviar el
+        /// comando SPEED (usar el valor por defecto de la impresora).
+        /// </summary>
+        [JsonProperty("speed")]
+        public int Speed { get; set; } = 0;
     }
 }

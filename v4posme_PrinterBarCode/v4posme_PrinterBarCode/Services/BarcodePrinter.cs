@@ -44,6 +44,20 @@ namespace v4posme_PrinterBarCode.Services
             double widthMm = bc.WidthMm;
             double heightMm = bc.HeightMm;
 
+            // Si la impresora es de tipo termico TSPL (HION/TSC), delegamos a la
+            // impresion nativa TSPL: la impresora genera el codigo de barra por
+            // hardware y sale nitido y escaneable. El dibujo GDI de abajo no sirve
+            // para estas impresoras (sale en blanco o borroso).
+            if (IsTsplPrinter(_config.TypePrinter))
+            {
+                Logger.Info($"typePrinter='{_config.TypePrinter}': se usa impresion nativa TSPL (RAW).");
+                var tspl = new TsplBarcodePrinter(_config);
+                tspl.Print(products, printerName, bc);
+                return;
+            }
+
+            Logger.Info($"typePrinter='{_config.TypePrinter}': se usa impresion grafica GDI.");
+
             // Expandimos la lista segun la cantidad de copias de cada producto.
             var labels = new List<Product>();
             foreach (var p in products)
@@ -226,5 +240,16 @@ namespace v4posme_PrinterBarCode.Services
         private static int MmToHundredthsInch(double mm) => (int)Math.Round(mm / 25.4 * 100.0);
 
         private static int MmToPixels(Graphics g, double mm) => (int)Math.Round(mm / 25.4 * g.DpiX);
+
+        /// <summary>
+        /// Indica si el tipo de impresora configurado usa el lenguaje TSPL (impresion RAW).
+        /// Acepta "HION", "TSPL" y "TSC" (sin distinguir mayusculas/minusculas).
+        /// </summary>
+        private static bool IsTsplPrinter(string typePrinter)
+        {
+            if (string.IsNullOrWhiteSpace(typePrinter)) return false;
+            string t = typePrinter.Trim().ToUpperInvariant();
+            return t == "HOIN" || t == "TSPL" || t == "TSC";
+        }
     }
 }

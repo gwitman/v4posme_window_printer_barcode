@@ -1,12 +1,13 @@
 {
   "version": "1.0.0.0",
-  "printerNamePriority": "HiLABELHi-Printer",
   "productsUrl": "https://posme.net/v4posme/blandon_moto_repuesto/public/app_mobile_api/getDataDownload",
   "httpMethod": "POST",
   "txtNickname": "superadmin",
   "txtPassword": "jose.",
   "userAgent": "Mozilla/5.0 (Windows NT; Windows NT 10.0; es-NI) WindowsPowerShell/5.1",
   "printerName": "HOION THERMAL LABEL",
+  "printerNamePriority": "HiLABELHi-Printer",
+  "typePrinter":  "HOIN",
   "logFilePath": "logs/app_log.txt",
   "requestTimeoutSeconds": 60,
   "barcode": {
@@ -21,6 +22,11 @@
     "showProductName": true,
     "showPrice": true,
     "marginMm": 1.5,
-    "copiesPerRow": 1
+    "copiesPerRow": 1,
+    "printerDpi": 203,
+    "gapMm": 2.0,
+    "gapOffsetMm": 0.0,
+    "density": 10,
+    "speed": 0
   }
 }
