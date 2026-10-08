@@ -141,44 +141,69 @@ namespace v4posme_PrinterBarCode.Services
                     Ascii("CLS\r\n");
                     if (bc.TsplBeepTest) Ascii("SOUND 2,100\r\n");
 
-                    // Alturas de los bloques de texto (imagen) para nombre y precio.
-                    int nameH = Math.Max(16, (int)Math.Round(bc.LabelFontSize * dotsPerMm / 1.6));
+                    // Margenes: usamos marginDots para los cuatro lados. El contenido
+                    // (texto y barras) arranca en marginX/marginTop y nunca invade el
+                    // margen derecho/inferior, de modo que no quede pegado al borde.
+                    int marginX = marginDots;
+                    int marginTop = marginDots;
+                    int marginBottom = marginDots;
+
+                    // Ancho util para texto y barras: ancho total menos margenes.
+                    int contentWidth = Math.Max(32, labelWidthDots - marginX * 2);
+
+                    // Alto de una linea de texto del nombre y del precio.
+                    int lineH = Math.Max(16, (int)Math.Round(bc.LabelFontSize * dotsPerMm / 1.6));
                     int priceH = Math.Max(18, (int)Math.Round((bc.LabelFontSize + 2) * dotsPerMm / 1.6));
 
                     bool drawName = bc.ShowProductName && !string.IsNullOrWhiteSpace(product.Name);
 
-                    int nameY = marginDots;
-                    int barcodeY = marginDots + (drawName ? nameH + 4 : 0);
+                    // El nombre puede ocupar hasta 2 lineas si no cabe en una. Medimos
+                    // cuantas lineas necesita para reservar su altura exacta.
+                    int nameLines = 0;
+                    int nameH = 0;
+                    if (drawName)
+                    {
+                        nameLines = MeasureTextLines(product.Name, bc.LabelFontName, bc.LabelFontSize,
+                            contentWidth, lineH, maxLines: 2);
+                        nameH = nameLines * lineH;
+                    }
 
-                    int reservedBottom = (bc.ShowPrice ? priceH + 4 : 0) + marginDots;
+                    int nameY = marginTop;
+                    int barcodeY = marginTop + (drawName ? nameH + 4 : 0);
+
+                    // Altura del texto legible que la impresora dibuja DEBAJO del
+                    // codigo de barra (una linea de su fuente interna, ~20 dots).
+                    const int humanReadableH = 20;
+
+                    // Reservamos abajo solo lo del precio (si aplica). El codigo de
+                    // barra se estira para ocupar casi todo el espacio disponible.
+                    int reservedBottom = (bc.ShowPrice ? priceH + 2 : 0) + marginBottom;
                     int available = labelHeightDots - barcodeY - reservedBottom;
-                    // El texto legible del BARCODE ocupa ~ una linea bajo las barras.
-                    int barHeight = available - nameH - 4;
-                    if (barHeight < 24) barHeight = 24;
+                    int barHeight = available - humanReadableH;
+                    if (barHeight < 30) barHeight = 30;
 
-                    int priceY = barcodeY + barHeight + nameH + 4;
-                    int maxPriceY = labelHeightDots - priceH - marginDots;
+                    // Precio pegado justo debajo del texto legible del codigo (sin
+                    // hueco): barcodeY + barras + texto legible.
+                    int priceY = barcodeY + barHeight + humanReadableH;
+                    int maxPriceY = labelHeightDots - priceH - marginBottom;
                     if (priceY > maxPriceY) priceY = maxPriceY;
                     if (priceY < 0) priceY = 0;
 
-                    // Ancho util para los bloques de texto-imagen (respetando margenes).
-                    int textWidth = Math.Max(32, labelWidthDots - marginDots * 2);
-
-                    // --- 1) Nombre del producto como IMAGEN (BITMAP) ---
+                    // --- 1) Nombre del producto como IMAGEN (BITMAP), con wrap a 2 lineas ---
                     if (drawName)
-                        AppendTextBitmap(ms, enc, marginDots, nameY, textWidth, nameH,
-                            product.Name, bc.LabelFontName, bc.LabelFontSize, bold: false);
+                        AppendTextBitmap(ms, enc, marginX, nameY, contentWidth, nameH,
+                            product.Name, bc.LabelFontName, bc.LabelFontSize, bold: false, maxLines: 2);
 
                     // --- 2) Precio como IMAGEN (BITMAP) ---
                     if (bc.ShowPrice)
                     {
                         string price = product.Price.ToString("C", CultureInfo.CurrentCulture);
-                        AppendTextBitmap(ms, enc, marginDots, priceY, textWidth, priceH,
-                            price, bc.LabelFontName, bc.LabelFontSize + 2, bold: true);
+                        AppendTextBitmap(ms, enc, marginX, priceY, contentWidth, priceH,
+                            price, bc.LabelFontName, bc.LabelFontSize + 2, bold: true, maxLines: 1);
                     }
 
                     // --- 3) Codigo de barra (lo genera la impresora: Code 128) ---
-                    Ascii($"BARCODE {marginDots},{barcodeY},\"128\",{barHeight},1,0,2,4,\"{EscapeText(raw)}\"\r\n");
+                    Ascii($"BARCODE {marginX},{barcodeY},\"128\",{barHeight},1,0,2,4,\"{EscapeText(raw)}\"\r\n");
 
                     // --- Imprimir 1 copia de esta etiqueta ---
                     Ascii("PRINT 1,1\r\n");
@@ -187,6 +212,34 @@ namespace v4posme_PrinterBarCode.Services
                 // CRLF final: asegura que el ultimo comando se ejecute.
                 Ascii("\r\n");
                 return ms.ToArray();
+            }
+        }
+
+        /// <summary>
+        /// Mide cuantas lineas (1..maxLines) necesita un texto para caber en el ancho
+        /// dado con la fuente indicada. Sirve para reservar la altura exacta del
+        /// bloque del nombre antes de dibujarlo.
+        /// </summary>
+        private static int MeasureTextLines(string text, string fontName, float fontSize,
+            int widthDots, int lineH, int maxLines)
+        {
+            if (string.IsNullOrWhiteSpace(text)) return 1;
+
+            using (var bmp = new System.Drawing.Bitmap(1, 1))
+            using (var g = System.Drawing.Graphics.FromImage(bmp))
+            {
+                float emPx = Math.Max(6f, lineH * 0.72f);
+                using (var font = new System.Drawing.Font(
+                           string.IsNullOrWhiteSpace(fontName) ? "Arial" : fontName,
+                           emPx, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Pixel))
+                {
+                    // Medimos el texto permitiendo ajuste al ancho disponible.
+                    var size = g.MeasureString(text, font, widthDots);
+                    int lines = (int)Math.Ceiling(size.Height / lineH);
+                    if (lines < 1) lines = 1;
+                    if (lines > maxLines) lines = maxLines;
+                    return lines;
+                }
             }
         }
 
@@ -202,7 +255,7 @@ namespace v4posme_PrinterBarCode.Services
         /// </summary>
         private static void AppendTextBitmap(System.IO.MemoryStream ms, Encoding enc,
             int x, int y, int widthDots, int heightDots, string text,
-            string fontName, float fontSize, bool bold)
+            string fontName, float fontSize, bool bold, int maxLines = 1)
         {
             // El ancho debe ser multiplo de 8 (cada byte = 8 pixeles).
             int widthBytes = (widthDots + 7) / 8;
@@ -218,8 +271,14 @@ namespace v4posme_PrinterBarCode.Services
                     g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.SingleBitPerPixelGridFit;
 
                     var style = bold ? System.Drawing.FontStyle.Bold : System.Drawing.FontStyle.Regular;
-                    // Tamano de fuente en puntos tipograficos aproximado a la altura disponible.
-                    float emPx = Math.Max(6f, height * 0.72f);
+                    // Tamano de fuente en pixeles basado en el alto de UNA linea, para
+                    // que si el bloque es de 2 lineas la fuente no se agigante.
+                    float lineHeightPx = (float)height / Math.Max(1, maxLines);
+                    float emPx = Math.Max(6f, lineHeightPx * 0.72f);
+
+                    // Con maxLines > 1 permitimos ajuste de linea (word wrap); con 1
+                    // linea evitamos el wrap y recortamos con puntos suspensivos.
+                    bool wrap = maxLines > 1;
                     using (var font = new System.Drawing.Font(
                                string.IsNullOrWhiteSpace(fontName) ? "Arial" : fontName,
                                emPx, style, System.Drawing.GraphicsUnit.Pixel))
@@ -228,7 +287,9 @@ namespace v4posme_PrinterBarCode.Services
                         Alignment = System.Drawing.StringAlignment.Near,
                         LineAlignment = System.Drawing.StringAlignment.Center,
                         Trimming = System.Drawing.StringTrimming.EllipsisCharacter,
-                        FormatFlags = System.Drawing.StringFormatFlags.NoWrap
+                        FormatFlags = wrap
+                            ? (System.Drawing.StringFormatFlags)0
+                            : System.Drawing.StringFormatFlags.NoWrap
                     })
                     {
                         g.DrawString(text ?? string.Empty, font, System.Drawing.Brushes.Black,

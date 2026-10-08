@@ -30,7 +30,7 @@
     "suffix": "*",
     "showProductName": true,
     "showPrice": true,
-    "marginMm": 1.5,
+    "marginMm": 3.0,
     "copiesPerRow": 1,
     "printerDpi": 203,
     "gapMm": 2.0,
