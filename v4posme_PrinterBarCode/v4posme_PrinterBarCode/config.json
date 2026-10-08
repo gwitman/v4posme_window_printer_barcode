@@ -5,9 +5,18 @@
   "txtNickname": "superadmin",
   "txtPassword": "jose.",
   "userAgent": "Mozilla/5.0 (Windows NT; Windows NT 10.0; es-NI) WindowsPowerShell/5.1",
-  "printerName": "2 Inch Series",
+  "printerName": "HiLabel_2inch",
+  "printerPort": "",
+  // usbVid = Vendor ID (ID del fabricante) del chip USB de la impresora, en hexadecimal de 4 digitos.
+  // usbPid = Product ID (ID del modelo) del dispositivo USB, en hexadecimal de 4 digitos.
+  // Juntos identifican de forma unica la impresora USB (se ven en el Administrador de
+  // dispositivos > Detalles > "Id. de hardware", formato VID_xxxx&PID_yyyy).
+  // Si ambos tienen valor, el TSPL se escribe DIRECTO al dispositivo USB (como la
+  // herramienta del fabricante), evitando el spooler/driver que atascan el trabajo.
+  "usbVid": "0471",
+  "usbPid": "0055",
   "printerNamePriority": "",
-  "typePrinter":  "HOIN",
+  "typePrinter": "HOIN",
   "logFilePath": "logs/app_log.txt",
   "requestTimeoutSeconds": 60,
   "barcode": {
@@ -27,6 +36,7 @@
     "gapMm": 2.0,
     "gapOffsetMm": 0.0,
     "density": 10,
-    "speed": 0
+    "speed": 0,
+    "tsplBeepTest": false
   }
 }

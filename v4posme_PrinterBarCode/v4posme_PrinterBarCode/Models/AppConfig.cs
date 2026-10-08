@@ -45,6 +45,28 @@ namespace v4posme_PrinterBarCode.Models
         public string PrinterName { get; set; }
 
         /// <summary>
+        /// Puerto fisico de la impresora (ej. "COM1", "LPT1"). Si es un puerto COM/LPT
+        /// real, los trabajos TSPL se escriben DIRECTO al puerto. Los puertos USBxxx
+        /// NO sirven aqui (no se pueden abrir por nombre); para USB use usbVid/usbPid.
+        /// </summary>
+        [JsonProperty("printerPort")]
+        public string PrinterPort { get; set; } = "";
+
+        /// <summary>
+        /// VID (Vendor ID) del dispositivo de impresora USB, en hexadecimal de 4
+        /// digitos (ej. "0471"). Si usbVid y usbPid tienen valor, los trabajos TSPL
+        /// se escriben DIRECTO al dispositivo USB (igual que la herramienta del
+        /// fabricante), evitando el spooler/driver que atascan el trabajo. Es el
+        /// metodo mas fiable para impresoras TSPL tipo HOIN conectadas por USB.
+        /// </summary>
+        [JsonProperty("usbVid")]
+        public string UsbVid { get; set; } = "";
+
+        /// <summary>PID (Product ID) del dispositivo de impresora USB, hex 4 digitos (ej. "0055").</summary>
+        [JsonProperty("usbPid")]
+        public string UsbPid { get; set; } = "";
+
+        /// <summary>
         /// Tipo/lenguaje de la impresora. Determina COMO se envia el trabajo:
         ///   "HION" / "TSPL" / "TSC"  -> se envian comandos TSPL nativos en RAW
         ///                                (la impresora genera el codigo de barra por hardware).
@@ -140,5 +162,13 @@ namespace v4posme_PrinterBarCode.Models
         /// </summary>
         [JsonProperty("speed")]
         public int Speed { get; set; } = 0;
+
+        /// <summary>
+        /// Si es true, antes de imprimir se envia un pitido (comando SOUND) para
+        /// confirmar fisicamente que la impresora recibe e interpreta el TSPL.
+        /// Util para diagnosticar en campo cuando "parece que imprime pero no pasa nada".
+        /// </summary>
+        [JsonProperty("tsplBeepTest")]
+        public bool TsplBeepTest { get; set; } = false;
     }
 }

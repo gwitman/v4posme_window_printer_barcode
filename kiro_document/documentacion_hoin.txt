@@ -1,0 +1,503 @@
+================================================================================
+                     TSPL / TSPL2 PROGRAMMING MANUAL
+                       BAR CODE PRINTER SERIES
+================================================================================
+
+--------------------------------------------------------------------------------
+TABLE OF CONTENTS
+--------------------------------------------------------------------------------
+1. DOCUMENT CONVENTIONS & MEASUREMENTS
+2. SETUP AND SYSTEM COMMANDS
+   - SIZE
+   - GAP / GAPDETECT / BLINEDETECT / AUTODETECT
+   - BLINE
+   - OFFSET
+   - SPEED
+   - DENSITY
+   - DIRECTION
+   - REFERENCE
+   - SHIFT
+   - COUNTRY / CODEPAGE
+   - CLS
+   - FEED / BACKFEED / BACKUP / FORMFEED / HOME
+   - PRINT
+   - SOUND
+   - CUT
+   - LIMITFEED
+   - SELFTEST
+   - EOJ / DELAY
+   - INITIALPRINTER
+3. LABEL FORMATTING COMMANDS
+   - BAR
+   - BARCODE (1D Barcodes & Character Sets)
+   - TLC39
+   - BITMAP / PUTBMP / PUTPCX
+   - BOX / CIRCLE / ELLIPSE
+   - CODABLOCK
+   - DMATRIX (DataMatrix)
+   - ERASE
+   - MAXICODE
+   - PDF417 / MPDF417
+   - AZTEC
+   - QRCODE
+   - RSS
+   - REVERSE
+   - DIAGONAL
+   - TEXT / BLOCK
+4. STATUS POLLING AND IMMEDIATE COMMANDS
+   - <ESC>!?
+   - <ESC>!C / <ESC>!Q / <ESC>!R / <ESC>!S / <ESC>!F / <ESC>!.
+   - ~!@ / ~!A / ~!C / ~!D / ~!E / ~!F / ~!I / ~!T
+5. BASIC COMMANDS AND FUNCTIONS
+   - DOWNLOAD / EOP / FILES / KILL / MOVE / RUN
+   - ABS, ASC, CHR$, XOR$, END, EOF, OPEN, CLOSE, WRITE, READ, SEEK, LOF, LOC
+   - FREAD$, PUT, GET, COPY
+   - Control Structures: FOR...NEXT, WHILE...WEND, DO...LOOP, IF...THEN...ELSE
+   - Subroutines: GOSUB...RETURN, GOTO
+   - I/O & String Functions: INP$, INP, LOB, INPUT, PREINPUT, POSTINPUT, SET FILTER, REM, OUT, OUTR, GETKEY, INT, LEFT$, LEN, MID$, RIGHT$, STR$, STRCOMP, INSTR, TRIM$, LTRIM$, RTRIM$, TEXTPIXEL, BARCODEPIXEL, VAL, BEEP
+   - Real-Time Clock & Formatting: NOW$, NOW, FORMAT$, DATEADD, FSEARCH, TOUCHPRESS
+6. DEVICE RECONFIGURATION COMMANDS
+   - SET COUNTER
+   - SET CUTTER / SET PARTIAL_CUTTER
+   - SET BACK
+   - SET KEYn
+   - SET LED1, SET LED2, SET LED3
+   - SET PEEL / SET REWIND / SET TEAR & STRIPER
+   - SET GAP / SET BLINE
+   - SET HEAD / SET RIBBON / SET ENCODER / SET RIBBONEND
+   - SET COM1 / SET PRINTKEY / SET REPRINT / SET FEED_LEN
+   - GETSENSOR() / GETSETTING$()
+   - SET USBHOST / SET RS232_REWINDER / SET AUTORUN / SET VERIFIER / SET RESPONSE
+7. GLOBAL VARIABLES
+   - @LABEL, YEAR, MONTH, DATE, WEEK, HOUR, MINUTE, SECOND
+   - @YEAR, @MONTH, @DATE, @DAY, @HOUR, @MINUTE, @SECOND
+
+================================================================================
+1. DOCUMENT CONVENTIONS & MEASUREMENTS
+================================================================================
+
+Measurement Units:
+- 200 / 203 DPI: 1 mm = 8 dots
+- 300 DPI: 1 mm = 11.8 dots (12 dots integer equivalent)
+
+Control Character Conventions:
+- [expression list]: Optional items.
+- <ESC>: ASCII 27, control code for immediate status polling commands.
+- ~: ASCII 126, status polling command control code executed when ready.
+- Space: ASCII 32.
+- CR, LF: ASCII 13, ASCII 10 (Denotes end of command line).
+- NULL: ASCII 0.
+
+================================================================================
+2. SETUP AND SYSTEM COMMANDS
+================================================================================
+
+--------------------------------------------------------------------------------
+SIZE
+--------------------------------------------------------------------------------
+Description: Defines the label width and length.
+Syntax:
+  SIZE m,n          (English system: inches)
+  SIZE m mm,n mm    (Metric system: mm)
+  SIZE m dot,n dot  (Dot measurement)
+Parameters:
+  m: Label width
+  n: Label length
+Note: Space is required between the parameter and "mm" or "dot".
+Example:
+  SIZE 4,2.5
+  SIZE 100 mm,100 mm
+
+--------------------------------------------------------------------------------
+GAP
+--------------------------------------------------------------------------------
+Description: Defines the gap distance between two labels.
+Syntax:
+  GAP m,n
+  GAP m mm,n mm
+  GAP m dot,n dot
+Parameters:
+  m: Gap distance between two labels
+  n: Offset distance of the gap
+  0,0: Continuous label
+Example:
+  GAP 0.12,0
+  GAP 3 mm,0 mm
+  GAP 0,0
+
+--------------------------------------------------------------------------------
+GAPDETECT / BLINEDETECT / AUTODETECT
+--------------------------------------------------------------------------------
+Description: Calibrates the paper/gap/black mark sensor automatically.
+Syntax:
+  GAPDETECT [x,y]
+  BLINEDETECT [x,y]
+  AUTODETECT [x,y]
+Parameters:
+  x: Paper length (in dots)
+  y: Gap/Black mark length (in dots)
+Note: If x,y parameters are omitted, the printer auto-calibrates.
+
+--------------------------------------------------------------------------------
+BLINE
+--------------------------------------------------------------------------------
+Description: Sets the height of the black line and extra feed length.
+Syntax:
+  BLINE m,n
+  BLINE m mm,n mm
+Parameters:
+  m: Height of black line
+  n: Extra label feeding length
+
+--------------------------------------------------------------------------------
+OFFSET
+--------------------------------------------------------------------------------
+Description: Defines selective extra feeding length for form feed (used for tear-off, peel-off, cutter adjustments).
+Syntax:
+  OFFSET m
+  OFFSET m mm
+
+--------------------------------------------------------------------------------
+SPEED
+--------------------------------------------------------------------------------
+Description: Defines the printing speed in inches per second (IPS).
+Syntax:
+  SPEED n
+Parameters:
+  n: Speed value (e.g., 1, 1.5, 2, 3, 4, 5, 6, 8, 10, 12, 14 depending on model)
+
+--------------------------------------------------------------------------------
+DENSITY
+--------------------------------------------------------------------------------
+Description: Sets the printing darkness.
+Syntax:
+  DENSITY n
+Parameters:
+  n: 0 to 15 (0 = lightest, 15 = darkest, default = 8)
+
+--------------------------------------------------------------------------------
+DIRECTION
+--------------------------------------------------------------------------------
+Description: Defines the printout direction and mirror image.
+Syntax:
+  DIRECTION n[,m]
+Parameters:
+  n: 0 (Normal top-first feed), 1 (Rotated 180 degrees)
+  m: 0 (Normal image), 1 (Mirror image)
+
+--------------------------------------------------------------------------------
+REFERENCE
+--------------------------------------------------------------------------------
+Description: Defines the reference point (origin) of the label in dots.
+Syntax:
+  REFERENCE x,y
+
+--------------------------------------------------------------------------------
+SHIFT
+--------------------------------------------------------------------------------
+Description: Shifts vertical and horizontal positioning on printout.
+Syntax:
+  SHIFT [x,]y   (Values range from -203 to 203 for 200dpi, -300 to 300 for 300dpi)
+
+--------------------------------------------------------------------------------
+COUNTRY / CODEPAGE
+--------------------------------------------------------------------------------
+Description: Configures country keyboard mapping and international character sets.
+Syntax:
+  COUNTRY n
+  CODEPAGE n
+Code Page Examples: 437 (US), 850 (Multilingual), 1252 (Latin I), UTF-8.
+
+--------------------------------------------------------------------------------
+CLS
+--------------------------------------------------------------------------------
+Description: Clears the image buffer. Must be placed after the SIZE command.
+Syntax:
+  CLS
+
+--------------------------------------------------------------------------------
+FEED / BACKFEED / BACKUP / FORMFEED / HOME
+--------------------------------------------------------------------------------
+Syntax:
+  FEED n       (Feeds n dots)
+  BACKFEED n   (Reverses feed by n dots - TSPL2)
+  BACKUP n     (Reverses feed by n dots - TSPL)
+  FORMFEED     (Feeds to the beginning of the next label)
+  HOME         (Feeds to the label origin sensor point)
+
+--------------------------------------------------------------------------------
+PRINT
+--------------------------------------------------------------------------------
+Description: Prints the label format stored in the image buffer.
+Syntax:
+  PRINT m[,n]
+Parameters:
+  m: Sets of labels to print (1 to 999999999)
+  n: Copies per set (1 to 999999999)
+
+--------------------------------------------------------------------------------
+CUT / SOUND / LIMITFEED / SELFTEST / EOJ / DELAY / INITIALPRINTER
+--------------------------------------------------------------------------------
+Syntax:
+  CUT                             (Cuts label immediately)
+  SOUND level,interval            (Beep control: level 0-9, interval 1-4095)
+  LIMITFEED n                     (Sets max feed before sensor error)
+  SELFTEST [PATTERN/ETHERNET/WLAN/RS232/SYSTEM/Z]
+  EOJ                             (Waits for command execution completion)
+  DELAY ms                        (Pauses execution in milliseconds)
+  INITIALPRINTER                  (Restores printer to factory defaults)
+
+================================================================================
+3. LABEL FORMATTING COMMANDS
+================================================================================
+
+--------------------------------------------------------------------------------
+BAR
+--------------------------------------------------------------------------------
+Description: Draws a solid black bar/line.
+Syntax:
+  BAR x,y,width,height
+
+--------------------------------------------------------------------------------
+BARCODE
+--------------------------------------------------------------------------------
+Description: Prints 1D barcodes.
+Syntax:
+  BARCODE X,Y,"code type",height,human readable,rotation,narrow,wide,[alignment,]"content"
+Supported Code Types:
+  128, 128M, EAN128, 25, 25C, 39, 39C, 93, EAN13, EAN13+2, EAN13+5, EAN8,
+  EAN8+2, EAN8+5, CODA, POST, UPCA, UPCA+2, UPCA+5, UPCE, UPCE+2, UPCE+5,
+  CPOST, MSI, MSIC, PLESSEY, ITF14, EAN14, 11, TELEPEN, TELEPENN, PLANET, CODE49, DPI, DPL, LOGMARS
+Human Readable:
+  0: Not readable
+  1: Align left
+  2: Align center
+  3: Align right
+
+--------------------------------------------------------------------------------
+BOX / CIRCLE / ELLIPSE
+--------------------------------------------------------------------------------
+Syntax:
+  BOX x,y,x_end,y_end,line_thickness[,radius]
+  CIRCLE x_start,y_start,diameter,thickness
+  ELLIPSE x,y,width,height,thickness
+
+--------------------------------------------------------------------------------
+BITMAP / PUTBMP / PUTPCX
+--------------------------------------------------------------------------------
+Syntax:
+  BITMAP x,y,width_bytes,height_dots,mode,bitmap_data...
+  PUTBMP x,y,"filename"[,bpp][,contrast]
+  PUTPCX x,y,"filename"
+
+--------------------------------------------------------------------------------
+DMATRIX (DataMatrix 2D Barcode)
+--------------------------------------------------------------------------------
+Syntax:
+  DMATRIX x,y,width,height,[c#,x#,r#,a#,row,col,]"content"
+
+--------------------------------------------------------------------------------
+MAXICODE
+--------------------------------------------------------------------------------
+Syntax:
+  MAXICODE x,y,mode,[class,country,post,Lm,]"content"
+
+--------------------------------------------------------------------------------
+PDF417 / MPDF417
+--------------------------------------------------------------------------------
+Syntax:
+  PDF417 x,y,width,height,rotate,[options],"content"
+  MPDF417 x,y,rotate,[Wn,][Hn,][Cn,]"content"
+
+--------------------------------------------------------------------------------
+AZTEC
+--------------------------------------------------------------------------------
+Syntax:
+  AZTEC x,y,rotate,[size,][ecp,][flg,][menu,][multi,][rev,]"content"
+
+--------------------------------------------------------------------------------
+QRCODE
+--------------------------------------------------------------------------------
+Syntax:
+  QRCODE x,y,ECC_level,cell_width,mode,rotation,[model,mask,]"content"
+ECC Levels:
+  L: 7% error correction
+  M: 15% error correction
+  Q: 25% error correction
+  H: 30% error correction
+Mode:
+  A: Auto mode
+  M: Manual mode
+
+--------------------------------------------------------------------------------
+RSS
+--------------------------------------------------------------------------------
+Syntax:
+  RSS x,y,"sym",rotate,pixMult,sepHt,"content"
+Symbology Types:
+  RSS14, RSS14T, RSS14S, RSS14SO, RSSLIM, RSSEXP, UPCA, UPCE, EAN13, EAN8, UCC128CCA, UCC128CCC
+
+--------------------------------------------------------------------------------
+REVERSE / DIAGONAL / ERASE
+--------------------------------------------------------------------------------
+Syntax:
+  REVERSE x_start,y_start,x_width,y_height
+  DIAGONAL x1,y1,x2,y2,thickness
+  ERASE x,y,x_width,y_height
+
+--------------------------------------------------------------------------------
+TEXT / BLOCK
+--------------------------------------------------------------------------------
+Description: Renders single text string or formatted multiline paragraphs.
+Syntax:
+  TEXT x,y,"font",rotation,x-multiplication,y-multiplication,[alignment,]"content"
+  BLOCK x,y,width,height,"font",rotation,x-multiplication,y-multiplication,[space,][alignment,]"content"
+Font Names:
+  "0": Monotype CG Triumvirate Bold Condensed (scalable)
+  "1": 8x12 fixed pitch dot font
+  "2": 12x20 fixed pitch dot font
+  "3": 16x24 fixed pitch dot font
+  "4": 24x32 fixed pitch dot font
+  "5": 32x48 fixed pitch dot font
+  "6": 14x19 OCR-B
+  "7": 21x27 OCR-B
+  "8": 14x25 OCR-A
+  "ROMAN.TTF": TrueType Font
+
+================================================================================
+4. STATUS POLLING AND IMMEDIATE COMMANDS
+================================================================================
+
+Immediate commands begin with <ESC>! (ASCII 27 + ASCII 33).
+- <ESC>!?: Inquires printer status. Returns 1 byte:
+    00: Normal, 01: Head open, 02: Paper jam, 04: Out of paper, 08: Out of ribbon, 10: Pause, 20: Printing.
+- <ESC>!C: Restarts printer and skips AUTO.BAS.
+- <ESC>!D: Disables immediate commands.
+- <ESC>!P: Pauses printer.
+- <ESC>!O: Cancels pause state.
+- <ESC>!R: Resets printer.
+- <ESC>!S: Obtains detailed 8-byte status packet.
+- ~!@: Inquires printer mileage.
+- ~!A: Inquires free memory bytes.
+- ~!F: Inquires files resident in memory.
+- ~!I: Inquires codepage and country setting.
+- ~!T: Inquires printer model name and firmware version.
+
+================================================================================
+5. BASIC COMMANDS AND PROGRAMMING FUNCTIONS
+================================================================================
+
+--------------------------------------------------------------------------------
+File Management Commands
+--------------------------------------------------------------------------------
+- DOWNLOAD [n,]"FILENAME.BAS": Header to start storing a program into memory.
+  n: Memory target (Omitted = DRAM, F = Flash, E = Extension Card).
+- EOP: End of program block.
+- FILES: Prints file list and memory allocation.
+- KILL [n,]"FILENAME": Deletes file(s) from printer memory.
+- MOVE: Moves files from DRAM to FLASH memory.
+- RUN "FILENAME.BAS": Executes program stored in memory.
+
+--------------------------------------------------------------------------------
+Built-in BASIC Functions
+--------------------------------------------------------------------------------
+- Math & String Manipulations:
+    ABS(n), ASC("A"), CHR$(n), XOR$(data$,password$), INT(n),
+    VAL("numeric_string"), STR$(n), LEFT$(x$,n), RIGHT$(x$,n), MID$(string,m,n),
+    LEN(string), STRCOMP(str1$,str2$[,comp]), INSTR([start,]str1$,str2$),
+    TRIM$(str$), LTRIM$(str$), RTRIM$(str$), TEXTPIXEL(text$,font$,size),
+    BARCODEPIXEL(content$,sym$,narrow,wide)
+
+- File I/O Functions:
+    OPEN [mem_id,]"filename",file_handle
+    CLOSE file_handle
+    WRITE file_handle,variables
+    READ file_handle,variables
+    SEEK file_handle,offset
+    EOF(file_handle)
+    LOF("filename")
+    LOC(file_handle)
+    FREAD$(file_handle,bytes)
+    PUT file_handle,var1$[,var2$...]
+    GET file_handle,var1$[,var2$...]
+    COPY [source_id,]"source_filename",[target_id,]"target_filename"
+
+- Program Control Structures:
+    FOR var = start TO end STEP increment ... NEXT
+    WHILE condition ... WEND
+    DO [WHILE/UNTIL condition] ... LOOP [WHILE/UNTIL condition]
+    IF condition THEN ... [ELSE ... ] ENDIF
+    GOSUB label ... RETURN
+    GOTO label
+    END
+
+- Real-Time Clock & Date Handling:
+    NOW$(): Returns date/time string.
+    NOW: Returns days elapsed since A.D. 1900.
+    FORMAT$(expression, style$): Formats date/time string.
+    DATEADD(interval$, number, date): Adds time/date intervals.
+
+================================================================================
+6. DEVICE RECONFIGURATION COMMANDS
+================================================================================
+
+- SET COUNTER @n step / @n="Expression"
+  Sets counters (@0 to @60). @0~@50 cleared on reboot; @51~@60 preserved.
+- SET CUTTER OFF / BATCH / pieces
+- SET PARTIAL_CUTTER OFF / BATCH / pieces
+- SET BACK OFF / ON
+- SET KEYn ON / OFF / DEFAULT / MENU / PAUSE / PRINT m / FEED / CUT / INPUT "string"
+- SET LED1 / LED2 / LED3 ON / OFF
+- SET PEEL ON / OFF
+- SET REWIND ON / OFF
+- SET TEAR ON / OFF
+- SET GAP n / AUTO / OFF / REVERSE / OBVERSE
+- SET BLINE REVERSE / OBVERSE
+- SET HEAD ON / OFF
+- SET RIBBON ON / OFF / INSIDE / OUTSIDE
+- SET ENCODER ON / OFF
+- SET RIBBONEND ON / OFF
+- SET COM1 baud,parity,data,stop
+- SET PRINTKEY OFF / ON / AUTO / <num>
+- SET REPRINT OFF / ON
+- SET FEED_LEN n
+- GETSENSOR(sensor$[,intension]): Reads sensor AD/analog values (GAP, BLINE, RIBBON, PEEL, HEAD UP, HEAD TEMP, HEAD VOLT).
+- GETSETTING$(app$,sec$,key$[,default$]): Queries printer runtime configuration settings.
+- SET USBHOST KEYBOARD / SCANNER
+- SET AUTORUN "filename"
+- SET RESPONSE ["Job ID",] ON / OFF / BATCH
+
+================================================================================
+7. PRINTER GLOBAL VARIABLES
+================================================================================
+
+- @LABEL: Internal print job label counter.
+- RTC Variables (Read/Write):
+    YEAR, MONTH, DATE, WEEK, HOUR, MINUTE, SECOND
+- System String Variables (Read/Write - TSPL2):
+    @YEAR, @MONTH, @DATE, @DAY, @HOUR, @MINUTE, @SECOND
+
+================================================================================
+SAMPLE COMPLETE TSPL PROGRAM
+================================================================================
+
+SIZE 4, 2.5
+GAP 3 mm, 0 mm
+SPEED 4
+DENSITY 8
+DIRECTION 1
+REFERENCE 0,0
+CLS
+
+BOX 10,10,780,490,4
+TEXT 40,40,"3",0,1,1,"TSPL PROGRAMMING DEMO"
+BAR 40,80,700,4
+TEXT 40,100,"0",0,12,12,"Scalable Vector Font Text"
+BARCODE 40,160,"128",80,1,0,2,4,"*TSPL-128*"
+QRCODE 500,160,H,4,A,0,"https://www.example.com"
+TEXT 40,300,"2",0,1,1,"PRINTED QUANTITY:"
+SET COUNTER @0 +1
+@0="0001"
+TEXT 300,300,"3",0,1,1,@0
+
+PRINT 1,1

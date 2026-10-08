@@ -51,7 +51,33 @@ namespace v4posme_PrinterBarCode.Services
             // en campo por que una etiqueta sale vacia o sin codigo de barra.
             Logger.Info("Comandos TSPL generados:\r\n" + commands);
 
-            RawPrinterHelper.SendStringToPrinter(printerName, commands);
+            // Decidimos el canal de envio, en orden de fiabilidad:
+            //  1) usbVid+usbPid  -> escritura DIRECTA al dispositivo USB (como la
+            //     herramienta del fabricante). Evita el spooler/driver que atascan
+            //     el trabajo en el puerto USB. Es el metodo recomendado para HOIN.
+            //  2) puerto COM/LPT -> escritura DIRECTA al puerto serie/paralelo.
+            //  3) resto          -> envio RAW por el spooler usando printerName.
+            bool useUsb = !string.IsNullOrWhiteSpace(_config.UsbVid)
+                          && !string.IsNullOrWhiteSpace(_config.UsbPid);
+            bool usePort = !string.IsNullOrWhiteSpace(_config.PrinterPort)
+                           && RawPrinterHelper.IsDirectlyOpenablePort(_config.PrinterPort);
+
+            if (useUsb)
+            {
+                Logger.Info($"Enviando TSPL DIRECTO al dispositivo USB (VID={_config.UsbVid}, " +
+                    $"PID={_config.UsbPid}), sin spooler ni driver.");
+                RawPrinterHelper.SendStringToUsbDevice(_config.UsbVid, _config.UsbPid, commands);
+            }
+            else if (usePort)
+            {
+                Logger.Info($"Enviando TSPL DIRECTO al puerto '{_config.PrinterPort}' (sin driver).");
+                RawPrinterHelper.SendStringToPort(_config.PrinterPort, commands);
+            }
+            else
+            {
+                Logger.Info($"Enviando TSPL por el spooler (RAW) a la impresora '{printerName}'.");
+                RawPrinterHelper.SendStringToPrinter(printerName, commands);
+            }
 
             Logger.Info("Trabajo TSPL enviado correctamente a la impresora.");
         }
@@ -74,6 +100,12 @@ namespace v4posme_PrinterBarCode.Services
 
             var sb = new StringBuilder();
 
+            // Secuencia de inicializacion: un CRLF inicial limpia cualquier byte
+            // residual que haya quedado en el buffer de comandos de la impresora
+            // de un trabajo anterior. Sin esto, algunas HOIN/clones descartan el
+            // primer comando (SIZE) y entonces NO imprimen nada (ni suenan).
+            sb.Append("\r\n");
+
             foreach (var product in labels)
             {
                 string raw = Sanitize(product.EffectiveBarcode);
@@ -93,11 +125,20 @@ namespace v4posme_PrinterBarCode.Services
                 sb.Append("GAP ")
                   .Append(Fmt(bc.GapMm)).Append(" mm,")
                   .Append(Fmt(bc.GapOffsetMm)).Append(" mm\r\n");
+                // CODEPAGE 850: multilingue, asegura que acentos y simbolos del
+                // texto (nombre/precio) se interpreten igual que en el buffer RAW.
+                sb.Append("CODEPAGE 850\r\n");
                 sb.Append("DIRECTION 1\r\n");
                 if (bc.Speed > 0)
                     sb.Append("SPEED ").Append(bc.Speed).Append("\r\n");
                 sb.Append("DENSITY ").Append(Clamp(bc.Density, 0, 15)).Append("\r\n");
                 sb.Append("CLS\r\n");
+
+                // Pitido de diagnostico: confirma fisicamente que la impresora
+                // recibio e interpreto el TSPL. Si suena pero no imprime, el
+                // problema es de medios/sensor; si ni suena, no llegan los datos.
+                if (bc.TsplBeepTest)
+                    sb.Append("SOUND 2,100\r\n");
 
                 int y = marginDots;
 
@@ -133,6 +174,12 @@ namespace v4posme_PrinterBarCode.Services
                 // --- Imprimir 1 copia de esta etiqueta ---
                 sb.Append("PRINT 1,1\r\n");
             }
+
+            // Garantizamos que el bloque termine en CRLF: TSPL ejecuta un comando
+            // solo cuando recibe su fin de linea. Si el ultimo PRINT quedara sin
+            // CRLF, la impresora lo retiene en el buffer y nunca imprime.
+            if (sb.Length < 2 || sb[sb.Length - 1] != '\n')
+                sb.Append("\r\n");
 
             return sb.ToString();
         }
