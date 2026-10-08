@@ -25,6 +25,7 @@ namespace v4posme_PrinterBarCode.Forms
             this.btnClearSelection = new System.Windows.Forms.Button();
             this.btnReload = new System.Windows.Forms.Button();
             this.lblSelectedCount = new System.Windows.Forms.Label();
+            this.btnConfig = new System.Windows.Forms.Button();
             this.grid = new System.Windows.Forms.DataGridView();
             this.panelStatus = new System.Windows.Forms.Panel();
             this.lblStatus = new System.Windows.Forms.Label();
@@ -38,6 +39,7 @@ namespace v4posme_PrinterBarCode.Forms
             // panelHeader
             // 
             this.panelHeader.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(0)))), ((int)(((byte)(120)))), ((int)(((byte)(215)))));
+            this.panelHeader.Controls.Add(this.btnConfig);
             this.panelHeader.Controls.Add(this.lblSubtitle);
             this.panelHeader.Controls.Add(this.lblTitle);
             this.panelHeader.Dock = System.Windows.Forms.DockStyle.Top;
@@ -67,6 +69,22 @@ namespace v4posme_PrinterBarCode.Forms
             this.lblSubtitle.Size = new System.Drawing.Size(300, 17);
             this.lblSubtitle.TabIndex = 1;
             this.lblSubtitle.Text = "Busque, seleccione e imprima etiquetas de productos";
+            // 
+            // btnConfig
+            // 
+            this.btnConfig.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.btnConfig.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(0)))), ((int)(((byte)(95)))), ((int)(((byte)(170)))));
+            this.btnConfig.FlatAppearance.BorderSize = 0;
+            this.btnConfig.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnConfig.Font = new System.Drawing.Font("Segoe UI", 9.5F, System.Drawing.FontStyle.Bold);
+            this.btnConfig.ForeColor = System.Drawing.Color.White;
+            this.btnConfig.Location = new System.Drawing.Point(870, 18);
+            this.btnConfig.Name = "btnConfig";
+            this.btnConfig.Size = new System.Drawing.Size(110, 36);
+            this.btnConfig.TabIndex = 2;
+            this.btnConfig.Text = "Config";
+            this.btnConfig.UseVisualStyleBackColor = false;
+            this.btnConfig.Click += new System.EventHandler(this.btnConfig_Click);
             // 
             // panelToolbar
             // 
@@ -244,6 +262,7 @@ namespace v4posme_PrinterBarCode.Forms
         private System.Windows.Forms.Button btnClearSelection;
         private System.Windows.Forms.Button btnReload;
         private System.Windows.Forms.Label lblSelectedCount;
+        private System.Windows.Forms.Button btnConfig;
         private System.Windows.Forms.DataGridView grid;
         private System.Windows.Forms.Panel panelStatus;
         private System.Windows.Forms.Label lblStatus;

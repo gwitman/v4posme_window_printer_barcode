@@ -38,5 +38,20 @@ namespace v4posme_PrinterBarCode.Services
 
             return config;
         }
+
+        /// <summary>
+        /// Serializa la configuracion y la guarda en config.json junto al ejecutable.
+        /// Sobrescribe el archivo con un JSON indentado y legible.
+        /// </summary>
+        public static void Save(AppConfig config)
+        {
+            if (config == null)
+                throw new ArgumentNullException(nameof(config));
+
+            var path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, ConfigFileName);
+            var json = JsonConvert.SerializeObject(config, Formatting.Indented);
+            File.WriteAllText(path, json);
+            Logger.Info($"Configuracion guardada en '{path}'.");
+        }
     }
 }

@@ -321,6 +321,23 @@ namespace v4posme_PrinterBarCode.Forms
             await LoadProductsAsync();
         }
 
+        /// <summary>
+        /// Abre el formulario de configuracion. Al guardar, los valores quedan
+        /// escritos en config.json y aplicados en memoria para esta sesion.
+        /// </summary>
+        private void btnConfig_Click(object sender, EventArgs e)
+        {
+            using (var dlg = new ConfigForm(_config))
+            {
+                if (dlg.ShowDialog(this) == DialogResult.OK)
+                {
+                    // Refrescamos la preseleccion de impresora por si cambio en el config.
+                    LoadPrinters();
+                    SetStatus("Configuracion actualizada.");
+                }
+            }
+        }
+
         private async void btnPrint_Click(object sender, EventArgs e)
         {
             // Resolvemos los productos seleccionados desde el listado completo.
