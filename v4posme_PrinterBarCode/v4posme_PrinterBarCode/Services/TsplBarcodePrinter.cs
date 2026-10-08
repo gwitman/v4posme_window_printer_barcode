@@ -45,11 +45,17 @@ namespace v4posme_PrinterBarCode.Services
 
             Logger.Info($"Generando trabajo TSPL para {labels.Count} etiqueta(s) en '{printerName}'.");
 
-            var commands = BuildTspl(labels, bc);
+            // El trabajo se construye como BYTES: el nombre y el precio se envian
+            // como imagen (comando BITMAP con datos binarios), porque el firmware
+            // de estos clones HOIN NO implementa el comando TEXT. Los bytes binarios
+            // del BITMAP no sobreviven una conversion a texto, por eso trabajamos a
+            // nivel de byte[] y no de string.
+            byte[] commands = BuildTsplBytes(labels, bc);
 
-            // Registramos el bloque TSPL completo: es la unica forma de diagnosticar
-            // en campo por que una etiqueta sale vacia o sin codigo de barra.
-            Logger.Info("Comandos TSPL generados:\r\n" + commands);
+            // Registramos solo la parte legible (los comandos ASCII) para diagnostico;
+            // los datos binarios del BITMAP se omiten del log para no ensuciarlo.
+            Logger.Info($"Trabajo TSPL generado: {commands.Length} byte(s) " +
+                $"para {labels.Count} etiqueta(s).");
 
             // Decidimos el canal de envio, en orden de fiabilidad:
             //  1) usbVid+usbPid  -> escritura DIRECTA al dispositivo USB (como la
@@ -66,24 +72,30 @@ namespace v4posme_PrinterBarCode.Services
             {
                 Logger.Info($"Enviando TSPL DIRECTO al dispositivo USB (VID={_config.UsbVid}, " +
                     $"PID={_config.UsbPid}), sin spooler ni driver.");
-                RawPrinterHelper.SendStringToUsbDevice(_config.UsbVid, _config.UsbPid, commands);
+                RawPrinterHelper.SendBytesToUsbDevice(_config.UsbVid, _config.UsbPid, commands);
             }
             else if (usePort)
             {
                 Logger.Info($"Enviando TSPL DIRECTO al puerto '{_config.PrinterPort}' (sin driver).");
-                RawPrinterHelper.SendStringToPort(_config.PrinterPort, commands);
+                RawPrinterHelper.SendBytesToPort(_config.PrinterPort, commands);
             }
             else
             {
                 Logger.Info($"Enviando TSPL por el spooler (RAW) a la impresora '{printerName}'.");
-                RawPrinterHelper.SendStringToPrinter(printerName, commands);
+                RawPrinterHelper.SendBytesToPrinter(printerName, commands);
             }
 
             Logger.Info("Trabajo TSPL enviado correctamente a la impresora.");
         }
 
-        /// <summary>Genera el bloque de comandos TSPL para todas las etiquetas.</summary>
-        private string BuildTspl(List<Product> labels, BarcodeConfig bc)
+        /// <summary>
+        /// Genera el trabajo TSPL completo como BYTES. El codigo de barra lo genera
+        /// la impresora (comando BARCODE), pero el nombre y el precio se envian como
+        /// IMAGEN (comando BITMAP) porque el firmware de estos clones HOIN no
+        /// implementa el comando TEXT. Al mezclar texto ASCII con datos binarios del
+        /// BITMAP, el trabajo debe construirse a nivel de byte[].
+        /// </summary>
+        private byte[] BuildTsplBytes(List<Product> labels, BarcodeConfig bc)
         {
             // TSPL trabaja en puntos (dots). El factor dots/mm depende del dpi de la
             // impresora (203 dpi => 8 dots/mm; 300 dpi => ~11.81 dots/mm).
@@ -91,97 +103,159 @@ namespace v4posme_PrinterBarCode.Services
             double dotsPerMm = dpi / 25.4;
 
             int marginDots = (int)Math.Round(Math.Max(0, bc.MarginMm) * dotsPerMm);
-
-            // Altura de las barras: dejamos espacio para nombre (arriba) y codigo/precio (abajo).
-            int lineHeightDots = (int)Math.Round(Math.Max(8, bc.LabelFontSize) * dotsPerMm / 2.2);
+            int labelWidthDots = (int)Math.Round(bc.WidthMm * dotsPerMm);
+            int labelHeightDots = (int)Math.Round(bc.HeightMm * dotsPerMm);
 
             Logger.Info($"TSPL: dpi={dpi} ({dotsPerMm:0.##} dots/mm), gap={bc.GapMm}mm, " +
                 $"density={bc.Density}, speed={(bc.Speed > 0 ? bc.Speed.ToString() : "default")}.");
 
-            var sb = new StringBuilder();
-
-            // Secuencia de inicializacion: un CRLF inicial limpia cualquier byte
-            // residual que haya quedado en el buffer de comandos de la impresora
-            // de un trabajo anterior. Sin esto, algunas HOIN/clones descartan el
-            // primer comando (SIZE) y entonces NO imprimen nada (ni suenan).
-            sb.Append("\r\n");
-
-            foreach (var product in labels)
+            // CP850 para los comandos ASCII; los datos del BITMAP se anexan como bytes crudos.
+            Encoding enc = Encoding.GetEncoding(850);
+            using (var ms = new System.IO.MemoryStream())
             {
-                string raw = Sanitize(product.EffectiveBarcode);
-
-                // Sin contenido no hay codigo de barra posible: el comando BARCODE
-                // de TSPL exige un valor. Avisamos y saltamos esta etiqueta.
-                if (string.IsNullOrEmpty(raw))
+                void Ascii(string s)
                 {
-                    Logger.Warn($"Producto '{product.Name}' sin codigo de barra; se omite su etiqueta TSPL.");
-                    continue;
+                    byte[] b = enc.GetBytes(s);
+                    ms.Write(b, 0, b.Length);
                 }
 
-                // --- Configuracion de la etiqueta ---
-                sb.Append("SIZE ")
-                  .Append(Fmt(bc.WidthMm)).Append(" mm,")
-                  .Append(Fmt(bc.HeightMm)).Append(" mm\r\n");
-                sb.Append("GAP ")
-                  .Append(Fmt(bc.GapMm)).Append(" mm,")
-                  .Append(Fmt(bc.GapOffsetMm)).Append(" mm\r\n");
-                // CODEPAGE 850: multilingue, asegura que acentos y simbolos del
-                // texto (nombre/precio) se interpreten igual que en el buffer RAW.
-                sb.Append("CODEPAGE 850\r\n");
-                sb.Append("DIRECTION 1\r\n");
-                if (bc.Speed > 0)
-                    sb.Append("SPEED ").Append(bc.Speed).Append("\r\n");
-                sb.Append("DENSITY ").Append(Clamp(bc.Density, 0, 15)).Append("\r\n");
-                sb.Append("CLS\r\n");
+                // CRLF inicial: limpia cualquier byte residual del buffer de comandos.
+                Ascii("\r\n");
 
-                // Pitido de diagnostico: confirma fisicamente que la impresora
-                // recibio e interpreto el TSPL. Si suena pero no imprime, el
-                // problema es de medios/sensor; si ni suena, no llegan los datos.
-                if (bc.TsplBeepTest)
-                    sb.Append("SOUND 2,100\r\n");
-
-                int y = marginDots;
-
-                // --- Nombre del producto (texto arriba) ---
-                if (bc.ShowProductName && !string.IsNullOrWhiteSpace(product.Name))
+                foreach (var product in labels)
                 {
-                    // Fuente "2" = fuente interna mediana. x,y en dots.
-                    sb.Append("TEXT ").Append(marginDots).Append(',').Append(y)
-                      .Append(",\"2\",0,1,1,\"").Append(EscapeText(Truncate(product.Name, 32))).Append("\"\r\n");
-                    y += lineHeightDots + 6;
+                    string raw = Sanitize(product.EffectiveBarcode);
+                    if (string.IsNullOrEmpty(raw))
+                    {
+                        Logger.Warn($"Producto '{product.Name}' sin codigo de barra; se omite su etiqueta TSPL.");
+                        continue;
+                    }
+
+                    // --- Configuracion de la etiqueta ---
+                    Ascii($"SIZE {Fmt(bc.WidthMm)} mm,{Fmt(bc.HeightMm)} mm\r\n");
+                    Ascii($"GAP {Fmt(bc.GapMm)} mm,{Fmt(bc.GapOffsetMm)} mm\r\n");
+                    Ascii("CODEPAGE 850\r\n");
+                    Ascii("DIRECTION 1\r\n");
+                    if (bc.Speed > 0) Ascii($"SPEED {bc.Speed}\r\n");
+                    Ascii($"DENSITY {Clamp(bc.Density, 0, 15)}\r\n");
+                    Ascii("CLS\r\n");
+                    if (bc.TsplBeepTest) Ascii("SOUND 2,100\r\n");
+
+                    // Alturas de los bloques de texto (imagen) para nombre y precio.
+                    int nameH = Math.Max(16, (int)Math.Round(bc.LabelFontSize * dotsPerMm / 1.6));
+                    int priceH = Math.Max(18, (int)Math.Round((bc.LabelFontSize + 2) * dotsPerMm / 1.6));
+
+                    bool drawName = bc.ShowProductName && !string.IsNullOrWhiteSpace(product.Name);
+
+                    int nameY = marginDots;
+                    int barcodeY = marginDots + (drawName ? nameH + 4 : 0);
+
+                    int reservedBottom = (bc.ShowPrice ? priceH + 4 : 0) + marginDots;
+                    int available = labelHeightDots - barcodeY - reservedBottom;
+                    // El texto legible del BARCODE ocupa ~ una linea bajo las barras.
+                    int barHeight = available - nameH - 4;
+                    if (barHeight < 24) barHeight = 24;
+
+                    int priceY = barcodeY + barHeight + nameH + 4;
+                    int maxPriceY = labelHeightDots - priceH - marginDots;
+                    if (priceY > maxPriceY) priceY = maxPriceY;
+                    if (priceY < 0) priceY = 0;
+
+                    // Ancho util para los bloques de texto-imagen (respetando margenes).
+                    int textWidth = Math.Max(32, labelWidthDots - marginDots * 2);
+
+                    // --- 1) Nombre del producto como IMAGEN (BITMAP) ---
+                    if (drawName)
+                        AppendTextBitmap(ms, enc, marginDots, nameY, textWidth, nameH,
+                            product.Name, bc.LabelFontName, bc.LabelFontSize, bold: false);
+
+                    // --- 2) Precio como IMAGEN (BITMAP) ---
+                    if (bc.ShowPrice)
+                    {
+                        string price = product.Price.ToString("C", CultureInfo.CurrentCulture);
+                        AppendTextBitmap(ms, enc, marginDots, priceY, textWidth, priceH,
+                            price, bc.LabelFontName, bc.LabelFontSize + 2, bold: true);
+                    }
+
+                    // --- 3) Codigo de barra (lo genera la impresora: Code 128) ---
+                    Ascii($"BARCODE {marginDots},{barcodeY},\"128\",{barHeight},1,0,2,4,\"{EscapeText(raw)}\"\r\n");
+
+                    // --- Imprimir 1 copia de esta etiqueta ---
+                    Ascii("PRINT 1,1\r\n");
                 }
 
-                // --- Codigo de barra (generado por la impresora: Code 128) ---
-                // BARCODE x,y,"code type",height,human_readable,rotation,narrow,wide,"content"
-                int barHeight = (int)Math.Round(bc.HeightMm * dotsPerMm * 0.45);
-                if (barHeight < 24) barHeight = 24;
-
-                sb.Append("BARCODE ").Append(marginDots).Append(',').Append(y)
-                  .Append(",\"128\",").Append(barHeight)
-                  .Append(",1,0,2,4,\"").Append(EscapeText(raw)).Append("\"\r\n");
-
-                // Avanzamos: altura de barras + texto legible que TSPL dibuja debajo.
-                y += barHeight + lineHeightDots + 8;
-
-                // --- Precio (texto abajo) ---
-                if (bc.ShowPrice)
-                {
-                    string price = product.Price.ToString("C", CultureInfo.CurrentCulture);
-                    sb.Append("TEXT ").Append(marginDots).Append(',').Append(y)
-                      .Append(",\"3\",0,1,1,\"").Append(EscapeText(price)).Append("\"\r\n");
-                }
-
-                // --- Imprimir 1 copia de esta etiqueta ---
-                sb.Append("PRINT 1,1\r\n");
+                // CRLF final: asegura que el ultimo comando se ejecute.
+                Ascii("\r\n");
+                return ms.ToArray();
             }
+        }
 
-            // Garantizamos que el bloque termine en CRLF: TSPL ejecuta un comando
-            // solo cuando recibe su fin de linea. Si el ultimo PRINT quedara sin
-            // CRLF, la impresora lo retiene en el buffer y nunca imprime.
-            if (sb.Length < 2 || sb[sb.Length - 1] != '\n')
-                sb.Append("\r\n");
+        /// <summary>
+        /// Dibuja un texto en un bitmap monocromatico y lo anexa al stream como un
+        /// comando TSPL BITMAP. Es la via fiable para imprimir texto en clones HOIN
+        /// que no soportan el comando TEXT: la impresora solo tiene que pintar pixeles.
+        ///
+        /// Formato TSPL: BITMAP x,y,width_bytes,height,mode,&lt;datos&gt;
+        ///   - width_bytes = ancho en bytes (cada byte son 8 pixeles horizontales).
+        ///   - mode 0 = OVERWRITE.
+        ///   - En TSPL el bit 1 = pixel BLANCO y el bit 0 = pixel NEGRO (invertido).
+        /// </summary>
+        private static void AppendTextBitmap(System.IO.MemoryStream ms, Encoding enc,
+            int x, int y, int widthDots, int heightDots, string text,
+            string fontName, float fontSize, bool bold)
+        {
+            // El ancho debe ser multiplo de 8 (cada byte = 8 pixeles).
+            int widthBytes = (widthDots + 7) / 8;
+            int width = widthBytes * 8;
+            int height = Math.Max(8, heightDots);
 
-            return sb.ToString();
+            using (var bmp = new System.Drawing.Bitmap(width, height,
+                       System.Drawing.Imaging.PixelFormat.Format32bppArgb))
+            {
+                using (var g = System.Drawing.Graphics.FromImage(bmp))
+                {
+                    g.Clear(System.Drawing.Color.White);
+                    g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.SingleBitPerPixelGridFit;
+
+                    var style = bold ? System.Drawing.FontStyle.Bold : System.Drawing.FontStyle.Regular;
+                    // Tamano de fuente en puntos tipograficos aproximado a la altura disponible.
+                    float emPx = Math.Max(6f, height * 0.72f);
+                    using (var font = new System.Drawing.Font(
+                               string.IsNullOrWhiteSpace(fontName) ? "Arial" : fontName,
+                               emPx, style, System.Drawing.GraphicsUnit.Pixel))
+                    using (var fmt = new System.Drawing.StringFormat
+                    {
+                        Alignment = System.Drawing.StringAlignment.Near,
+                        LineAlignment = System.Drawing.StringAlignment.Center,
+                        Trimming = System.Drawing.StringTrimming.EllipsisCharacter,
+                        FormatFlags = System.Drawing.StringFormatFlags.NoWrap
+                    })
+                    {
+                        g.DrawString(text ?? string.Empty, font, System.Drawing.Brushes.Black,
+                            new System.Drawing.RectangleF(0, 0, width, height), fmt);
+                    }
+                }
+
+                // Convertimos el bitmap a los bytes 1bpp que espera TSPL.
+                byte[] data = new byte[widthBytes * height];
+                for (int row = 0; row < height; row++)
+                {
+                    for (int col = 0; col < width; col++)
+                    {
+                        var px = bmp.GetPixel(col, row);
+                        // Pixel oscuro => negro (bit 0); claro => blanco (bit 1).
+                        bool dark = (px.R + px.G + px.B) / 3 < 128;
+                        if (!dark)
+                            data[row * widthBytes + col / 8] |= (byte)(0x80 >> (col % 8));
+                    }
+                }
+
+                byte[] header = enc.GetBytes($"BITMAP {x},{y},{widthBytes},{height},0,");
+                ms.Write(header, 0, header.Length);
+                ms.Write(data, 0, data.Length);
+                byte[] crlf = enc.GetBytes("\r\n");
+                ms.Write(crlf, 0, crlf.Length);
+            }
         }
 
         /// <summary>Formatea un numero con punto decimal para TSPL (independiente de la cultura).</summary>

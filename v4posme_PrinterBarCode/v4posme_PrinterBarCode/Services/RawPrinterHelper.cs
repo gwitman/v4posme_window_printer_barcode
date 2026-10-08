@@ -194,6 +194,23 @@ namespace v4posme_PrinterBarCode.Services
         }
 
         /// <summary>
+        /// Envia un arreglo de bytes CRUDOS a una impresora USB localizandola por
+        /// VID/PID. Igual que SendStringToUsbDevice, pero sin convertir texto: es la
+        /// via correcta cuando el trabajo contiene datos binarios (comando BITMAP),
+        /// que no sobreviven a una conversion de texto a CP850.
+        /// </summary>
+        public static void SendBytesToUsbDevice(string vid, string pid, byte[] bytes)
+        {
+            string devicePath = ResolveUsbPrinterPath(vid, pid);
+            if (devicePath == null)
+                throw new InvalidOperationException(
+                    $"No se encontro un dispositivo de impresora USB con VID={vid} PID={pid}. " +
+                    "Verifique que la impresora este encendida y conectada.");
+
+            SendBytesToDevicePath(devicePath, bytes);
+        }
+
+        /// <summary>
         /// Escribe bytes crudos a una ruta de dispositivo (ej.
         /// "\\?\USB#VID_0471&amp;PID_0055#...#{guid}") abierta con CreateFile.
         /// </summary>
