@@ -50,6 +50,7 @@ namespace v4posme_PrinterBarCode.Forms
             txtPrefix.Text = bc.Prefix;
             txtSuffix.Text = bc.Suffix;
             chkShowProductName.Checked = bc.ShowProductName;
+            chkShowBarcodeText.Checked = bc.ShowBarcodeText;
             chkShowPrice.Checked = bc.ShowPrice;
 
             // Guardamos los campos del config que no se editan en la UI para no
@@ -109,6 +110,7 @@ namespace v4posme_PrinterBarCode.Forms
             ResultBarcode.Prefix = txtPrefix.Text;
             ResultBarcode.Suffix = txtSuffix.Text;
             ResultBarcode.ShowProductName = chkShowProductName.Checked;
+            ResultBarcode.ShowBarcodeText = chkShowBarcodeText.Checked;
             ResultBarcode.ShowPrice = chkShowPrice.Checked;
 
             DialogResult = DialogResult.OK;

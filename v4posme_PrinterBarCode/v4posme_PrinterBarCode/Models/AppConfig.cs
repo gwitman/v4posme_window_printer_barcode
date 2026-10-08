@@ -122,6 +122,15 @@ namespace v4posme_PrinterBarCode.Models
         [JsonProperty("showProductName")]
         public bool ShowProductName { get; set; } = true;
 
+        /// <summary>
+        /// Si es true, se imprime el valor del codigo de barra como TEXTO legible
+        /// (una linea con los digitos), ubicado entre el nombre y las barras. Si es
+        /// false, no se muestra ese texto y solo salen las barras del codigo.
+        /// Orden de la etiqueta: nombre, codigo de barra (texto), barras, precio.
+        /// </summary>
+        [JsonProperty("showBarcodeText")]
+        public bool ShowBarcodeText { get; set; } = true;
+
         [JsonProperty("showPrice")]
         public bool ShowPrice { get; set; } = true;
 

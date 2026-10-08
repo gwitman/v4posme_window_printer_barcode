@@ -156,6 +156,7 @@ namespace v4posme_PrinterBarCode.Services
                     int priceH = Math.Max(18, (int)Math.Round((bc.LabelFontSize + 2) * dotsPerMm / 1.6));
 
                     bool drawName = bc.ShowProductName && !string.IsNullOrWhiteSpace(product.Name);
+                    bool drawBarcodeText = bc.ShowBarcodeText;
 
                     // El nombre puede ocupar hasta 2 lineas si no cabe en una. Medimos
                     // cuantas lineas necesita para reservar su altura exacta.
@@ -168,12 +169,20 @@ namespace v4posme_PrinterBarCode.Services
                         nameH = nameLines * lineH;
                     }
 
+                    // Orden de la etiqueta: nombre, codigo de barra (texto), barras, precio.
                     int nameY = marginTop;
-                    int barcodeY = marginTop + (drawName ? nameH + 4 : 0);
 
-                    // Altura del texto legible que la impresora dibuja DEBAJO del
-                    // codigo de barra (una linea de su fuente interna, ~20 dots).
-                    const int humanReadableH = 20;
+                    // El texto del codigo de barra (los digitos) va DEBAJO del nombre y
+                    // ENCIMA de las barras. Lo dibujamos nosotros como imagen y
+                    // deshabilitamos el texto legible interno de la impresora.
+                    int barcodeTextH = drawBarcodeText ? lineH : 0;
+                    int barcodeTextY = marginTop + (drawName ? nameH + 4 : 0);
+
+                    int barcodeY = barcodeTextY + (drawBarcodeText ? barcodeTextH + 2 : 0);
+
+                    // Como ahora dibujamos el texto del codigo nosotros (arriba de las
+                    // barras), la impresora NO dibuja su texto legible interno.
+                    const int humanReadableH = 0;
 
                     // Reservamos abajo solo lo del precio (si aplica). El codigo de
                     // barra se estira para ocupar casi todo el espacio disponible.
@@ -194,7 +203,12 @@ namespace v4posme_PrinterBarCode.Services
                         AppendTextBitmap(ms, enc, marginX, nameY, contentWidth, nameH,
                             product.Name, bc.LabelFontName, bc.LabelFontSize, bold: false, maxLines: 2);
 
-                    // --- 2) Precio como IMAGEN (BITMAP) ---
+                    // --- 2) Codigo de barra como TEXTO (BITMAP), encima de las barras ---
+                    if (drawBarcodeText)
+                        AppendTextBitmap(ms, enc, marginX, barcodeTextY, contentWidth, barcodeTextH,
+                            raw, bc.LabelFontName, bc.LabelFontSize, bold: false, maxLines: 1);
+
+                    // --- 3) Precio como IMAGEN (BITMAP) ---
                     if (bc.ShowPrice)
                     {
                         string price = product.Price.ToString("C", CultureInfo.CurrentCulture);
@@ -202,8 +216,10 @@ namespace v4posme_PrinterBarCode.Services
                             price, bc.LabelFontName, bc.LabelFontSize + 2, bold: true, maxLines: 1);
                     }
 
-                    // --- 3) Codigo de barra (lo genera la impresora: Code 128) ---
-                    Ascii($"BARCODE {marginX},{barcodeY},\"128\",{barHeight},1,0,2,4,\"{EscapeText(raw)}\"\r\n");
+                    // --- 4) Barras del codigo (lo genera la impresora: Code 128) ---
+                    // El 5o parametro (texto legible) va en 0: el texto ya lo dibujamos
+                    // nosotros arriba de las barras cuando showBarcodeText esta activo.
+                    Ascii($"BARCODE {marginX},{barcodeY},\"128\",{barHeight},0,0,2,4,\"{EscapeText(raw)}\"\r\n");
 
                     // --- Imprimir 1 copia de esta etiqueta ---
                     Ascii("PRINT 1,1\r\n");

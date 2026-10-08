@@ -38,6 +38,7 @@ namespace v4posme_PrinterBarCode.Forms
             this.lblSuffix = new System.Windows.Forms.Label();
             this.txtSuffix = new System.Windows.Forms.TextBox();
             this.chkShowProductName = new System.Windows.Forms.CheckBox();
+            this.chkShowBarcodeText = new System.Windows.Forms.CheckBox();
             this.chkShowPrice = new System.Windows.Forms.CheckBox();
             this.lblSummary = new System.Windows.Forms.Label();
             this.btnAccept = new System.Windows.Forms.Button();
@@ -129,6 +130,7 @@ namespace v4posme_PrinterBarCode.Forms
             this.grpBarcode.Controls.Add(this.lblSuffix);
             this.grpBarcode.Controls.Add(this.txtSuffix);
             this.grpBarcode.Controls.Add(this.chkShowProductName);
+            this.grpBarcode.Controls.Add(this.chkShowBarcodeText);
             this.grpBarcode.Controls.Add(this.chkShowPrice);
             this.grpBarcode.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
             this.grpBarcode.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(0)))), ((int)(((byte)(120)))), ((int)(((byte)(215)))));
@@ -271,12 +273,22 @@ namespace v4posme_PrinterBarCode.Forms
             this.chkShowProductName.Text = "Mostrar nombre";
             this.chkShowProductName.Checked = true;
             // 
+            // chkShowBarcodeText
+            // 
+            this.chkShowBarcodeText.AutoSize = true;
+            this.chkShowBarcodeText.Font = new System.Drawing.Font("Segoe UI", 8.5F);
+            this.chkShowBarcodeText.ForeColor = System.Drawing.Color.Black;
+            this.chkShowBarcodeText.Location = new System.Drawing.Point(16, 186);
+            this.chkShowBarcodeText.Name = "chkShowBarcodeText";
+            this.chkShowBarcodeText.Text = "Mostrar codigo de barra (texto)";
+            this.chkShowBarcodeText.Checked = true;
+            // 
             // chkShowPrice
             // 
             this.chkShowPrice.AutoSize = true;
             this.chkShowPrice.Font = new System.Drawing.Font("Segoe UI", 8.5F);
             this.chkShowPrice.ForeColor = System.Drawing.Color.Black;
-            this.chkShowPrice.Location = new System.Drawing.Point(160, 158);
+            this.chkShowPrice.Location = new System.Drawing.Point(240, 186);
             this.chkShowPrice.Name = "chkShowPrice";
             this.chkShowPrice.Text = "Mostrar precio";
             this.chkShowPrice.Checked = true;
@@ -378,6 +390,7 @@ namespace v4posme_PrinterBarCode.Forms
         private System.Windows.Forms.Label lblSuffix;
         private System.Windows.Forms.TextBox txtSuffix;
         private System.Windows.Forms.CheckBox chkShowProductName;
+        private System.Windows.Forms.CheckBox chkShowBarcodeText;
         private System.Windows.Forms.CheckBox chkShowPrice;
         private System.Windows.Forms.Label lblSummary;
         private System.Windows.Forms.Button btnAccept;

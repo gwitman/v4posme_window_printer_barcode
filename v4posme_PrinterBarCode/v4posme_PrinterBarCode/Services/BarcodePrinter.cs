@@ -145,6 +145,8 @@ namespace v4posme_PrinterBarCode.Services
             float top = inner.Top;
             float bottom = inner.Bottom;
 
+            // Orden de la etiqueta: nombre, codigo de barra (texto), barras, precio.
+
             // Nombre del producto (arriba).
             if (bc.ShowProductName && !string.IsNullOrWhiteSpace(product.Name))
             {
@@ -157,23 +159,26 @@ namespace v4posme_PrinterBarCode.Services
                 }
             }
 
-            // Reservamos espacio para el texto legible del codigo y el precio (abajo).
+            // Texto legible del codigo de barra (entre el nombre y las barras).
             float humanTextHeight = bc.LabelFontSize * 1.6f;
+            if (bc.ShowBarcodeText)
+            {
+                using (var human = new Font(bc.LabelFontName, bc.LabelFontSize))
+                {
+                    g.DrawString(raw, human, Brushes.Black,
+                        new RectangleF(inner.Left, top, inner.Width, humanTextHeight), centerFormat);
+                    top += humanTextHeight;
+                }
+            }
+
+            // Reservamos espacio para el precio (abajo).
             float priceHeight = bc.ShowPrice ? (bc.LabelFontSize + 1) * 1.5f : 0f;
-            float reservedBottom = humanTextHeight + priceHeight;
 
             // Zona para las barras verticales.
             var barcodeRect = new RectangleF(
-                inner.Left, top, inner.Width, Math.Max(10f, bottom - top - reservedBottom));
+                inner.Left, top, inner.Width, Math.Max(10f, bottom - top - priceHeight));
 
             DrawCode128(g, raw, barcodeRect);
-
-            // Texto legible del codigo (debajo de las barras).
-            using (var human = new Font(bc.LabelFontName, bc.LabelFontSize))
-            {
-                g.DrawString(raw, human, Brushes.Black,
-                    new RectangleF(inner.Left, barcodeRect.Bottom, inner.Width, humanTextHeight), centerFormat);
-            }
 
             // Precio (abajo del todo).
             if (bc.ShowPrice)
@@ -181,7 +186,7 @@ namespace v4posme_PrinterBarCode.Services
                 using (var priceFont = new Font(bc.LabelFontName, bc.LabelFontSize + 1, FontStyle.Bold))
                 {
                     g.DrawString(product.Price.ToString("C"), priceFont, Brushes.Black,
-                        new RectangleF(inner.Left, barcodeRect.Bottom + humanTextHeight, inner.Width, priceHeight),
+                        new RectangleF(inner.Left, barcodeRect.Bottom, inner.Width, priceHeight),
                         centerFormat);
                 }
             }
